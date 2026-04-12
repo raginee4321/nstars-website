@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import mongoose from 'mongoose';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 dotenv.config();
 
@@ -13,6 +16,65 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nstars_taekwondo';
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary Storage for Multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'nstars-gallery',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+  },
+});
+
+// Mongoose Models
+const GallerySchema = new mongoose.Schema({
+  description: { type: String, required: true },
+  image_path: { type: String, required: true },
+  cloudinary_id: { type: String },
+  createdAt: { type: Date, default: Date.now },
+});
+
+GallerySchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+  }
+});
+
+const GalleryItem = mongoose.model('GalleryItem', GallerySchema);
+
+const RegistrationSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+RegistrationSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+  }
+});
+
+const Registration = mongoose.model('Registration', RegistrationSchema);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -20,17 +82,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, join(__dirname, 'uploads/gallery/'));
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-  }
-});
 
 const upload = multer({ 
   storage: storage,
@@ -45,27 +96,6 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
-
-// In-memory storage for demo (in production, use a real database)
-let galleryImages = [
-  {
-    id: 1,
-    description: 'Training Session',
-    image_path: 'https://images.pexels.com/photos/7045743/pexels-photo-7045743.jpeg'
-  },
-  {
-    id: 2,
-    description: 'Championship Event',
-    image_path: 'https://images.pexels.com/photos/8611180/pexels-photo-8611180.jpeg'
-  },
-  {
-    id: 3,
-    description: 'Belt Testing Ceremony',
-    image_path: 'https://images.pexels.com/photos/7045558/pexels-photo-7045558.jpeg'
-  }
-];
-
-let nextImageId = 4;
 
 // Routes
 app.get('/api/health', (req, res) => {
@@ -91,28 +121,31 @@ app.get('/api/events', (req, res) => {
   res.json({ success: true, data: events });
 });
 
-app.get('/api/gallery', (req, res) => {
-  res.json({ success: true, data: galleryImages });
+app.get('/api/gallery', async (req, res) => {
+  try {
+    const images = await GalleryItem.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: images });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch gallery' });
+  }
 });
 
 // Admin routes
-app.post('/api/admin/gallery/upload', upload.single('gallery_image'), (req, res) => {
+app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
     const { description } = req.body;
-    const imagePath = `/uploads/gallery/${req.file.filename}`;
     
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const newImage = {
-      id: nextImageId++,
+    const newImage = new GalleryItem({
       description: description || 'No description',
-      image_path: `${baseUrl}${imagePath}`
-    };
+      image_path: req.file.path, // Cloudinary URL
+      cloudinary_id: req.file.filename,
+    });
 
-    galleryImages.unshift(newImage); // Add to beginning of array
+    await newImage.save();
     
     res.json({ 
       success: true, 
@@ -125,23 +158,34 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), (req, res)
   }
 });
 
-app.delete('/api/admin/gallery/:id', (req, res) => {
-  const imageId = parseInt(req.params.id);
-  const imageIndex = galleryImages.findIndex(img => img.id === imageId);
-  
-  if (imageIndex === -1) {
-    return res.status(404).json({ success: false, message: 'Image not found' });
+app.delete('/api/admin/gallery/:id', async (req, res) => {
+  try {
+    const item = await GalleryItem.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'Image not found' });
+    }
+
+    // Delete from Cloudinary
+    if (item.cloudinary_id) {
+      await cloudinary.uploader.destroy(item.cloudinary_id);
+    }
+
+    await GalleryItem.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Image deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Delete failed' });
   }
-  
-  galleryImages.splice(imageIndex, 1);
-  res.json({ success: true, message: 'Image deleted successfully' });
 });
 
-app.post('/api/register', (req, res) => {
-  const { name, email, phone } = req.body;
-  // In a real application, you would save to database
-  console.log('Registration:', { name, email, phone });
-  res.json({ success: true, message: 'Registration successful' });
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const registration = new Registration({ name, email, phone });
+    await registration.save();
+    res.json({ success: true, message: 'Registration successful' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Registration failed' });
+  }
 });
 
 app.post('/api/login', (req, res) => {
