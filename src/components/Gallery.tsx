@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { GalleryImage } from '../types';
+import { api } from '../utils/api';
+
 
 interface GalleryProps {
   onBack: () => void;
@@ -15,8 +17,7 @@ const Gallery = ({ onBack }: GalleryProps) => {
   useEffect(() => {
     const loadImages = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/gallery');
-        const galleryImages = await response.json();
+        const galleryImages = await api.getGalleryImages();
         setImages(galleryImages);
       } catch (error) {
         console.error('Failed to load gallery images:', error);

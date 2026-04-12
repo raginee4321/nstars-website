@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Trash2, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { GalleryImage } from '../types';
+import { api } from '../utils/api';
+
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -19,8 +21,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const loadGalleryImages = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/gallery');
-      const images = await response.json();
+      const images = await api.getGalleryImages();
       setGalleryImages(images);
     } catch (error) {
       console.error('Failed to load gallery images:', error);
@@ -45,12 +46,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       formData.append('gallery_image', selectedFile);
       formData.append('description', description);
 
-      const response = await fetch('http://localhost:5000/api/admin/gallery/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
+      const result = await api.uploadGalleryImage(formData);
 
       if (result.success) {
         setDescription('');
@@ -73,11 +69,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     if (!confirm('Are you sure you want to delete this image?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/gallery/${imageId}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
+      const result = await api.deleteGalleryImage(imageId);
 
       if (result.success) {
         loadGalleryImages();

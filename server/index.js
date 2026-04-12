@@ -74,7 +74,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes for future features
 app.get('/api/events', (req, res) => {
-  res.json([
+  const events = [
     {
       id: 1,
       title: 'Annual Championship',
@@ -87,11 +87,12 @@ app.get('/api/events', (req, res) => {
       date: '2024-02-20',
       description: 'Intensive training camp for advanced students'
     }
-  ]);
+  ];
+  res.json({ success: true, data: events });
 });
 
 app.get('/api/gallery', (req, res) => {
-  res.json(galleryImages);
+  res.json({ success: true, data: galleryImages });
 });
 
 // Admin routes
@@ -104,10 +105,11 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), (req, res)
     const { description } = req.body;
     const imagePath = `/uploads/gallery/${req.file.filename}`;
     
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
     const newImage = {
       id: nextImageId++,
       description: description || 'No description',
-      image_path: `http://localhost:5000${imagePath}`
+      image_path: `${baseUrl}${imagePath}`
     };
 
     galleryImages.unshift(newImage); // Add to beginning of array
