@@ -1,70 +1,97 @@
-# Getting Started with Create React App
+# Taekwondo Association Of Palghar District Website
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, responsive website for the Taekwondo Association of Palghar District built with React, TypeScript, and Node.js.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Modern React Frontend**: Built with TypeScript for type safety
+- **Responsive Design**: Optimized for all device sizes
+- **Node.js Backend**: RESTful API with Express
+- **Professional Design**: Clean, martial arts-themed aesthetics
+- **Component Architecture**: Modular and maintainable code structure
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (v16 or higher)
+- npm or yarn package manager
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### `npm run build`
+3. Create environment file:
+   ```bash
+   cp .env.example .env
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Development
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+To run both frontend and backend simultaneously:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm run dev:full
+```
 
-### `npm run eject`
+Or run them separately:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Frontend only:
+```bash
+npm run dev
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Backend only:
+```bash
+npm run server
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Building for Production
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm run build
+```
 
-## Learn More
+## Project Structure
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```
+├── src/
+│   ├── components/       # React components
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # API utilities and helpers
+│   └── App.tsx          # Main application component
+├── server/
+│   └── index.js         # Express server
+└── package.json
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## API Endpoints
 
-### Code Splitting
+- `GET /api/health` - Server health check
+- `GET /api/events` - Fetch events
+- `GET /api/gallery` - Fetch gallery images
+- `POST /api/register` - User registration
+- `POST /api/login` - User authentication
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Technologies Used
 
-### Analyzing the Bundle Size
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Vite
+- **Backend**: Node.js, Express, CORS
+- **Icons**: Lucide React
+- **Fonts**: EB Garamond (Google Fonts)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Contributing
 
-### Making a Progressive Web App
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## License
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+© 2024 Taekwondo Association Of Palghar District. All rights reserved.
