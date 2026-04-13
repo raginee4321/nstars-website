@@ -30,14 +30,8 @@ cloudinary.config({
   secure: true
 });
 
-// Cloudinary Storage for Multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'nstars-gallery',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-  },
-});
+// We will use memory storage to avoid file system read-only issues on Vercel
+// and bypass multer-storage-cloudinary signature bugs.
 
 // Mongoose Models
 const GallerySchema = new mongoose.Schema({
@@ -85,7 +79,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 const upload = multer({ 
-  storage: storage,
+  storage: multer.memoryStorage(),
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -166,10 +160,25 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
 
     const { description } = req.body;
     
+    // Upload directly using Cloudinary Stream
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'nstars-gallery',
+          allowed_formats: ['jpg', 'png', 'jpeg'],
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
     const newImage = new GalleryItem({
       description: description || 'No description',
-      image_path: req.file.path, // Cloudinary URL
-      cloudinary_id: req.file.filename,
+      image_path: uploadResult.secure_url, 
+      cloudinary_id: uploadResult.public_id,
     });
 
     await newImage.save();
