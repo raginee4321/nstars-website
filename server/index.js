@@ -100,31 +100,25 @@ const upload = multer({
 // Routes
 app.get('/api/health', async (req, res) => {
   try {
-    const pingResult = await cloudinary.api.ping();
+    const crypto = await import('crypto');
+    const secretHash = process.env.CLOUDINARY_API_SECRET ? crypto.createHash('md5').update(process.env.CLOUDINARY_API_SECRET).digest('hex') : 'none';
+    const urlHash = process.env.CLOUDINARY_URL ? crypto.createHash('md5').update(process.env.CLOUDINARY_URL).digest('hex') : 'none';
+
     res.json({ 
       status: 'Server is running', 
       timestamp: new Date().toISOString(),
-      cloudinaryPing: 'Success',
+      cloudinaryPing: 'Skipped for diagnostic',
       envDebug: {
         hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
         hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+        secretHash: secretHash,
+        urlHash: urlHash,
         secretLength: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.length : 0,
         secretEnd: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.slice(-3) : 'none'
       }
     });
   } catch (error) {
-    res.json({ 
-      status: 'Server is running', 
-      timestamp: new Date().toISOString(),
-      cloudinaryPing: 'Failed',
-      cloudinaryError: error.message || error,
-      envDebug: {
-        hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-        hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-        secretLength: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.length : 0,
-        secretEnd: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.slice(-3) : 'none'
-      }
-    });
+    res.json({ error: error.message });
   }
 });
 
