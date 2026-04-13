@@ -190,7 +190,8 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ success: false, message: 'Upload failed' });
+    const errorDetails = error.message || (typeof error === 'object' ? JSON.stringify(error) : 'Upload failed');
+    res.status(500).json({ success: false, message: `Details: ${errorDetails} | ${String(error)}` });
   }
 });
 
