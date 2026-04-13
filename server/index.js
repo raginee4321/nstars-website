@@ -211,6 +211,16 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 // Create uploads directory if it doesn't exist
 import { mkdirSync, existsSync } from 'fs';
 const uploadsDir = join(__dirname, 'uploads/gallery');
