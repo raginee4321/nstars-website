@@ -100,7 +100,16 @@ const upload = multer({
 
 // Routes
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'Server is running', 
+    timestamp: new Date().toISOString(),
+    envDebug: {
+      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+      secretLength: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.length : 0,
+      secretEnd: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.slice(-3) : 'none'
+    }
+  });
 });
 
 // API Routes for future features
