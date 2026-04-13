@@ -23,12 +23,17 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Cloudinary Configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
-  api_key: process.env.CLOUDINARY_API_KEY?.trim(),
-  api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
-  secure: true
-});
+if (process.env.CLOUDINARY_URL) {
+  // If the user provides the full CLOUDINARY_URL, rely on that natively.
+  cloudinary.config(true); // Forces the SDK to re-parse the CLOUDINARY_URL
+} else {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+    api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+    api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+    secure: true
+  });
+}
 
 // We will use memory storage to avoid file system read-only issues on Vercel
 // and bypass multer-storage-cloudinary signature bugs.
