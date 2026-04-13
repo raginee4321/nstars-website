@@ -27,7 +27,7 @@ class ApiService {
       return {
         success: false,
         data: undefined,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : 'Unknown error',
       } as ApiResponse<T>;
     }
   }
@@ -52,8 +52,8 @@ class ApiService {
       return {
         success: false,
         data: undefined,
-        error: error instanceof Error ? error.message : 'Upload failed',
-      } as ApiResponse<GalleryImage>;
+        message: error instanceof Error ? error.message : 'Upload failed',
+      } as ApiResponse<T>;
     }
   }
 
