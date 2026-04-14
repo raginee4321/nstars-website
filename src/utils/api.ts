@@ -53,7 +53,7 @@ class ApiService {
         success: false,
         data: undefined,
         message: error instanceof Error ? error.message : 'Upload failed',
-      } as ApiResponse<T>;
+      } as ApiResponse<GalleryImage>;
     }
   }
 
@@ -65,7 +65,7 @@ class ApiService {
   }
 
   async login(username: string, password: string): Promise<ApiResponse<User>> {
-    return this.request<User>('/auth/login', {
+    return this.request<User>('/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });

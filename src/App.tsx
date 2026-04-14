@@ -15,11 +15,11 @@ function App() {
   const handleNavigate = (view: ViewType) => setCurrentView(view);
 
   const handleLogin = (username: string, password: string) => {
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'admin' && password === 'admin12345') {
       setIsLoggedIn(true);
       setCurrentView('admin');
     } else {
-      alert('Invalid credentials. Use admin/admin123 for demo.');
+      alert('Invalid credentials. Use admin / admin12345 to login.');
     }
   };
 

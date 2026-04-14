@@ -8,9 +8,11 @@ import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-dotenv.config();
-
+// Resolve .env from the project root (one level up from server/)
 const __filename = fileURLToPath(import.meta.url);
+const __rootDir = dirname(dirname(__filename));
+dotenv.config({ path: join(__rootDir, '.env') });
+
 const __dirname = dirname(__filename);
 
 const app = express();
@@ -71,7 +73,24 @@ RegistrationSchema.set('toJSON', {
 const Registration = mongoose.model('Registration', RegistrationSchema);
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',  // Vite dev server
+  'http://localhost:3000',  // fallback dev
+  'http://localhost:4173',  // Vite preview
+  process.env.FRONTEND_URL, // production URL (set in .env)
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman, Vercel serverless)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
