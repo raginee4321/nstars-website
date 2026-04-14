@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const socialLinks = [
@@ -27,10 +27,11 @@ const Footer: React.FC = () => {
           {/* Logo and Description */}
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Shield className="w-10 h-10 text-yellow-400" />
-                <div className="absolute inset-0 bg-yellow-400 rounded-full opacity-20 animate-pulse"></div>
-              </div>
+              <img
+                src="/logo1.png"
+                alt="N Stars Logo"
+                className="w-12 h-12 object-cover rounded-full"
+              />
               <div>
                 <h3 
                   className="text-2xl font-bold text-white"

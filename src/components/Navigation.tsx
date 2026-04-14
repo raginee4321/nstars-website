@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Image, LogIn, Shield } from 'lucide-react';
+import { Menu, X, Home, Image, LogIn } from 'lucide-react';
 
 type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner';
 
@@ -23,7 +23,6 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
     { icon: <Home size={18} />, label: 'Home', view: 'home' },
     { icon: <Image size={18} />, label: 'Gallery', view: 'gallery' },
     { icon: <LogIn size={18} />, label: 'Admin', view: 'login' },
-    { icon: <Shield size={18} />, label: 'Scan QR', view: 'qrscanner' }, // new
   ];
 
   return (
@@ -36,22 +35,8 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
     >
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div
-            className="flex items-center space-x-3 cursor-pointer group"
-            onClick={() => onNavigate('home')}
-          >
-            <div className="relative">
-              <Shield className="w-8 h-8 text-yellow-400 group-hover:text-yellow-300 transition-colors duration-300" />
-              <div className="absolute inset-0 bg-yellow-400 rounded-full opacity-20 scale-0 group-hover:scale-150 transition-transform duration-500"></div>
-            </div>
-            <span
-              className="text-xl font-bold text-white group-hover:text-yellow-400 transition-colors duration-300"
-              style={{ fontFamily: 'Garamond, serif' }}
-            >
-              N STARS
-            </span>
-          </div>
+          {/* Empty left side - logo only shown in hero section */}
+          <div></div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">

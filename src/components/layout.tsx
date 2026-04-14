@@ -1,8 +1,9 @@
 import React from 'react';
+import { Star } from 'lucide-react';
 import Header from './Header';
 import Navigation from './Navigation';
 import Footer from './Footer';
-import backgroundImg from './img.jpg'; // Make sure this exists in your src folder
+import backgroundImg from './img.jpg';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,14 @@ const Layout: React.FC<LayoutProps> = ({ children, onNavigate }) => {
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-80"></div>
+      </div>
+
+      {/* Subtle corner stars */}
+      <div className="fixed inset-0 pointer-events-none z-10">
+        <Star className="absolute top-24 left-5 w-5 h-5 text-yellow-300 animate-spin" style={{ animationDuration: '7s' }} />
+        <Star className="absolute top-24 right-5 w-5 h-5 text-red-400 animate-pulse" />
+        <Star className="absolute top-1/2 left-5 w-4 h-4 text-blue-300 animate-bounce" />
+        <Star className="absolute top-1/2 right-5 w-4 h-4 text-yellow-400 animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
       {/* Foreground Content */}
