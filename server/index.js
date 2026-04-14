@@ -73,21 +73,11 @@ RegistrationSchema.set('toJSON', {
 const Registration = mongoose.model('Registration', RegistrationSchema);
 
 // Middleware
-const allowedOrigins = [
-  'http://localhost:5173',  // Vite dev server
-  'http://localhost:3000',  // fallback dev
-  'http://localhost:4173',  // Vite preview
-  process.env.FRONTEND_URL, // production URL (set in .env)
-].filter(Boolean);
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman, Vercel serverless)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: origin ${origin} not allowed`));
-    }
+  origin: function (origin, callback) {
+    // Allow any origin for now to prevent CORS issues on Vercel
+    // Even if FRONTEND_URL is not set in Vercel Dashboard
+    callback(null, true);
   },
   credentials: true,
 }));
