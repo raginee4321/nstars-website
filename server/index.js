@@ -8,10 +8,12 @@ import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-// Resolve .env from the project root (one level up from server/)
-const __filename = fileURLToPath(import.meta.url);
-const __rootDir = dirname(dirname(__filename));
-dotenv.config({ path: join(__rootDir, '.env') });
+// Initialize environment variables
+dotenv.config(); // Standard load from .env in process.cwd()
+// Fallback if started from a subdirectory
+if (!process.env.MONGODB_URI) {
+  dotenv.config({ path: join(dirname(dirname(fileURLToPath(import.meta.url))), '.env') });
+}
 
 const __dirname = dirname(__filename);
 
@@ -25,10 +27,11 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Cloudinary Configuration - Bypassing Vercel auto-injected variables by using custom names
+// Cloudinary Configuration
 cloudinary.config({
-  cloud_name: (process.env.MY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME)?.trim(),
-  api_key: (process.env.MY_API_KEY || process.env.CLOUDINARY_API_KEY)?.trim(),
-  api_secret: (process.env.MY_API_SECRET || process.env.CLOUDINARY_API_SECRET)?.trim(),
+  cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME)?.trim(),
+  api_key: (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY)?.trim(),
+  api_secret: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.trim(),
   secure: true
 });
 

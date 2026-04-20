@@ -20,8 +20,19 @@ class ApiService {
         headers: mergedHeaders,
       });
 
-      const data = (await response.json()) as ApiResponse<T>;
-      return data;
+      const responseData = await response.json();
+      
+      // Handle both wrapped { success, data } and raw responses
+      if (responseData && typeof responseData === 'object' && 'success' in responseData) {
+        return responseData as ApiResponse<T>;
+      }
+
+      // If not wrapped, construct a success response with the raw data
+      return {
+        success: response.ok,
+        data: responseData as T,
+        message: response.ok ? undefined : 'Request failed',
+      };
     } catch (error: unknown) {
       console.error('API request failed:', error);
       return {
