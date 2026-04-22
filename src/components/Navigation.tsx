@@ -38,8 +38,6 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
   const navItems: { icon: JSX.Element; label: string; view: ViewType }[] = [
     { icon: <Home size={18} />, label: 'Home', view: 'home' },
     { icon: <Image size={18} />, label: 'Gallery', view: 'gallery' },
-    { icon: <Star size={18} />, label: 'Features', view: 'features' },
-    { icon: <Phone size={18} />, label: 'Contact', view: 'contact' },
     { icon: <LogIn size={18} />, label: 'Admin', view: 'login' },
   ];
 

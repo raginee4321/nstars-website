@@ -5,13 +5,11 @@ const Footer: React.FC = () => {
   const navLinks = [
     { name: 'Home', href: '#home' },
     { name: 'Gallery', href: '#gallery' },
-    { name: 'Features', href: '#features' },
     { name: 'About Us', href: '#about' },
-    { name: 'Contact Us', href: '#contact' },
   ];
 
   return (
-    <footer id="contact" className="relative bg-[#0a0f1a] border-t border-gray-800 pt-20 pb-10">
+    <footer id="contact" className="relative bg-[#050810] border-t border-gray-800 pt-20 pb-16">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-20">
           
@@ -125,20 +123,25 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center space-y-8 pb-10">
-          <p className="text-gray-500 font-medium text-center text-sm md:text-base">
+        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center justify-center space-y-10">
+          <p className="text-gray-500 font-medium text-center text-base">
             © {new Date().getFullYear()} N Stars Academy. All rights reserved.
           </p>
-          <div className="flex items-center space-x-2 text-gray-400 font-medium bg-gray-900/50 px-6 py-3 rounded-full border border-gray-800 shadow-inner">
-            <span>Made by</span>
-            <a
-              href="https://www.linkedin.com/in/raginee-sharma-08a256282"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yellow-400 hover:text-yellow-300 font-bold transition-all duration-300 hover:scale-105"
-            >
-              Raginee Sharma
-            </a>
+          
+          {/* Extremely Visible Developer Credit */}
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative flex items-center space-x-4 bg-black px-10 py-5 rounded-full border border-gray-800 shadow-2xl">
+              <span className="text-white font-medium text-lg">Made by</span>
+              <a
+                href="https://www.linkedin.com/in/raginee-sharma-08a256282"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:text-white text-xl font-black tracking-wider transition-all duration-300 transform hover:scale-110 flex items-center"
+              >
+                RAGINEE SHARMA
+              </a>
+            </div>
           </div>
         </div>
       </div>
