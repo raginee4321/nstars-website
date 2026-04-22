@@ -2,133 +2,144 @@ import React from 'react';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 
 const Footer: React.FC = () => {
-  const socialLinks = [
-    { icon: <Facebook size={20} />, href: '#', label: 'Facebook' },
-    { icon: <Instagram size={20} />, href: '#', label: 'Instagram' },
-    { icon: <Twitter size={20} />, href: '#', label: 'Twitter' },
-  ];
-
-  const contactInfo = [
-    { icon: <Mail size={18} />, text: 'info@taekwondopalghar.org', href: 'mailto:info@taekwondopalghar.org' },
-    { icon: <Phone size={18} />, text: '+91 98765 43210', href: 'tel:+919876543210' },
-    { icon: <MapPin size={18} />, text: 'Palghar District, Maharashtra', href: '#' },
+  const navLinks = [
+    { name: 'Home', href: '#home' },
+    { name: 'Gallery', href: '#gallery' },
+    { name: 'Features', href: '#features' },
+    { name: 'About Us', href: '#about' },
+    { name: 'Contact Us', href: '#contact' },
   ];
 
   return (
-    <footer className="relative bg-black bg-opacity-90 backdrop-blur-lg border-t border-gray-700">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-64 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-48 h-1 bg-gradient-to-r from-transparent via-red-400 to-transparent opacity-30 animate-pulse" style={{ animationDelay: '1s' }}></div>
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Logo and Description */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-3">
+    <footer id="contact" className="relative bg-[#0a0f1a] border-t border-gray-800 pt-20 pb-10">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-20">
+          
+          {/* Column 1: Branding */}
+          <div className="space-y-8">
+            <div className="flex items-center space-x-4">
               <img
                 src="/logo1.png"
                 alt="N Stars Logo"
-                className="w-12 h-12 object-cover rounded-full"
+                className="w-16 h-16 object-cover rounded-full shadow-2xl"
               />
-              <div>
-                <h3 
-                  className="text-2xl font-bold text-white"
-                  style={{ fontFamily: 'Garamond, serif' }}
-                >
-                  N STARS TAEKWONDO ACADEMY
-                </h3>
-                <p className="text-sm text-gray-400">Excellence in Martial Arts</p>
-              </div>
+              <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">
+                N STARS<br />
+                TAEKWONDO ACADEMY
+              </h3>
             </div>
-            <p className="text-gray-300 leading-relaxed">
-              Dedicated to promoting traditional Taekwondo values, discipline, and excellence 
-              throughout the Palghar District community.
+            <p className="text-gray-400 text-lg leading-relaxed max-w-sm font-light">
+              Empowering your future, one kick at a time. Join N Stars Academy today and ignite your potential in the art of Taekwondo.
             </p>
             
             {/* Social Links */}
-            <div className="flex space-x-4">
-              {socialLinks.map((social, index) => (
+            <div className="flex space-x-5 pt-4">
+              {[
+                { icon: <Facebook />, href: '#', label: 'Facebook' },
+                { icon: <Instagram />, href: '#', label: 'Instagram' },
+                { icon: <Twitter />, href: '#', label: 'Twitter' }
+              ].map((social, idx) => (
                 <a
-                  key={index}
+                  key={idx}
                   href={social.href}
-                  className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-yellow-400 hover:bg-yellow-400 hover:bg-opacity-20 transition-all duration-300 group"
+                  className="p-3 bg-gray-900 rounded-full text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all duration-300"
                   aria-label={social.label}
                 >
-                  <span className="group-hover:scale-110 transition-transform duration-300">
-                    {social.icon}
-                  </span>
+                  {social.icon}
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Contact Information */}
-          <div className="space-y-6">
-            <h4 
-              className="text-xl font-bold text-white mb-4"
-              style={{ fontFamily: 'Garamond, serif' }}
-            >
-              Get in Touch
-            </h4>
-            <div className="space-y-4">
-              {contactInfo.map((contact, index) => (
-                <a
-                  key={index}
-                  href={contact.href}
-                  className="flex items-center space-x-3 text-gray-300 hover:text-yellow-400 transition-colors duration-300 group"
-                >
-                  <span className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center group-hover:bg-yellow-400 group-hover:bg-opacity-20 transition-all duration-300">
-                    {contact.icon}
-                  </span>
-                  <span>{contact.text}</span>
-                </a>
+          {/* Column 2: Links */}
+          <div className="md:pl-16">
+            <h4 className="text-xl font-bold text-white mb-8">Links</h4>
+            <ul className="space-y-6">
+              {navLinks.map((link, idx) => (
+                <li key={idx}>
+                  <a
+                    href={link.href}
+                    className="text-gray-400 hover:text-yellow-400 font-medium transition-colors duration-300 block text-lg"
+                  >
+                    {link.name}
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
-          {/* Quick Links */}
-          <div className="space-y-6">
-            <h4 
-              className="text-xl font-bold text-white mb-4"
-              style={{ fontFamily: 'Garamond, serif' }}
-            >
-              Training Programs
-            </h4>
-            <div className="space-y-3">
-              {[
-                'Beginner Classes',
-                'Advanced Training',
-                'Competition Prep',
-                'Youth Programs',
-                'Adult Classes',
-                'Private Lessons'
-              ].map((program, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 cursor-pointer group"
-                >
-                  <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full group-hover:scale-150 transition-transform duration-300"></div>
-                  <span>{program}</span>
+          {/* Column 3: Contact Us */}
+          <div className="space-y-8">
+            <h4 className="text-xl font-bold text-white mb-8">Contact Us</h4>
+            
+            <div className="space-y-8">
+              {/* Phone */}
+              <div className="flex items-start space-x-5 group">
+                <div className="p-4 bg-white rounded-full text-[#0a0f1a] group-hover:bg-yellow-400 transition-colors duration-300 shadow-xl">
+                  <Phone className="w-6 h-6" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-white font-bold text-lg mb-1">Give us a call</p>
+                  <a href="tel:+919967379277" className="text-gray-400 hover:text-yellow-400 transition-colors duration-300">
+                    +91 99673 79277
+                  </a>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-start space-x-5 group">
+                <div className="p-4 bg-white rounded-full text-[#0a0f1a] group-hover:bg-yellow-400 transition-colors duration-300 shadow-xl">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-lg mb-1">Send us an email</p>
+                  <a href="mailto:nsawant2147@gmail.com" className="text-gray-400 hover:text-yellow-400 transition-colors duration-300">
+                    nsawant2147@gmail.com
+                  </a>
+                </div>
+              </div>
+
+              {/* Visit Us */}
+              <div className="flex items-start space-x-5 group">
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=A/34+Rashmi+Residency,+Near+Balaji+Banquet+Hall+%26+Behind+Fire+Brigade,+Vasai+Nalasopara+Link+Road,+Vasai+East,+Palghar+-+401208"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 bg-white rounded-full text-[#0a0f1a] hover:bg-yellow-400 transition-colors duration-300 shadow-xl font-bold"
+                  title="View on Google Maps"
+                >
+                  <MapPin className="w-6 h-6" />
+                </a>
+                <div>
+                  <p className="text-white font-bold text-lg mb-1">Visit us</p>
+                  <p className="text-gray-400 leading-relaxed">
+                    A/34 Rashmi Residency, Near Balaji Banquet Hall & Behind Fire Brigade,<br />
+                    Vasai Nalasopara Link Road, Vasai East,<br />
+                    Palghar - 401208
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-12 pt-8 border-t border-gray-700">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-center md:text-left">
-              © 2024 N Stars Taekwondo Academy. All rights reserved.
-            </p>
-            <div className="flex items-center space-x-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-yellow-400 transition-colors duration-300">Privacy Policy</a>
-              <a href="#" className="hover:text-yellow-400 transition-colors duration-300">Terms of Service</a>
-              <a href="#" className="hover:text-yellow-400 transition-colors duration-300">Contact</a>
-            </div>
-          </div>
+        <div className="pt-8 border-t border-gray-800/50 flex flex-col items-center space-y-6">
+          <p className="text-gray-500 font-medium text-center">
+            © {new Date().getFullYear()} N Stars Academy. All rights reserved.
+          </p>
+          <p className="text-gray-500 font-medium">
+            Made by{' '}
+            <a
+              href="https://www.linkedin.com/in/raginee-sharma-08a256282"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-yellow-400 hover:text-yellow-300 transition-colors duration-300 hover:underline"
+            >
+              Raginee Sharma
+            </a>
+          </p>
         </div>
       </div>
     </footer>

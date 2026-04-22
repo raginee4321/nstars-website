@@ -1,6 +1,5 @@
 import React from 'react';
 import { Star } from 'lucide-react';
-import Header from './Header';
 import Navigation from './Navigation';
 import Footer from './Footer';
 import backgroundImg from './img.jpg';
@@ -37,8 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNavigate }) => {
       {/* Foreground Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navigation onNavigate={onNavigate} />
-        <Header />
-        <main className="flex-grow flex items-center justify-center px-4">
+        <main className="flex-grow px-4 pt-24 pb-8">
           {children}
         </main>
         <Footer />

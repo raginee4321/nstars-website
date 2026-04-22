@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Image, LogIn } from 'lucide-react';
+import { Menu, X, Home, Image, LogIn, Star, Phone } from 'lucide-react';
 
-type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner';
+type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner' | 'features' | 'contact';
 
 interface NavigationProps {
   onNavigate: (view: ViewType) => void;
@@ -19,24 +19,60 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const navigateOrScroll = (view: ViewType) => {
+    if (view === 'features') {
+      onNavigate('home');
+      setTimeout(() => {
+        document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else if (view === 'contact') {
+      onNavigate('home');
+      setTimeout(() => {
+        document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      onNavigate(view);
+    }
+  };
+
   const navItems: { icon: JSX.Element; label: string; view: ViewType }[] = [
     { icon: <Home size={18} />, label: 'Home', view: 'home' },
     { icon: <Image size={18} />, label: 'Gallery', view: 'gallery' },
+    { icon: <Star size={18} />, label: 'Features', view: 'features' },
+    { icon: <Phone size={18} />, label: 'Contact', view: 'contact' },
     { icon: <LogIn size={18} />, label: 'Admin', view: 'login' },
   ];
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-black bg-opacity-95 backdrop-blur-lg shadow-2xl'
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-black bg-opacity-95 backdrop-blur-lg shadow-2xl`}
     >
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Empty left side - logo only shown in hero section */}
-          <div></div>
+          {/* Logo + Academy Name - Left Side */}
+          <div className="flex items-center space-x-3">
+            <img
+              src="/logo1.png"
+              alt="N Stars Logo"
+              className="w-10 h-10 object-cover rounded-full"
+            />
+            <span
+              className="font-bold text-base md:text-lg leading-tight"
+              style={{ fontFamily: 'Garamond, serif' }}
+            >
+              <span style={{ color: '#111111', WebkitTextStroke: '0.5px rgba(255,255,255,0.9)' }}>N</span>
+              {' '}
+              <span style={{ color: '#ef4444' }}>S</span>
+              <span style={{ color: '#3b82f6' }}>T</span>
+              <span style={{ color: '#22c55e' }}>A</span>
+              <span style={{ color: '#facc15' }}>R</span>
+              <span style={{ color: '#ffffff' }}>S</span>
+              {' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400">
+                Taekwondo Academy
+              </span>
+            </span>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
@@ -44,7 +80,7 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
               <button
                 key={item.view}
                 onClick={() => {
-                  onNavigate(item.view);
+                  navigateOrScroll(item.view);
                   setIsOpen(false);
                 }}
                 className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-all duration-300 group relative py-2 px-4 rounded-lg hover:bg-white hover:bg-opacity-10"
@@ -89,7 +125,7 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
               <button
                 key={item.view}
                 onClick={() => {
-                  onNavigate(item.view);
+                  navigateOrScroll(item.view);
                   setIsOpen(false);
                 }}
                 className="flex items-center space-x-3 w-full text-left px-6 py-3 text-gray-300 hover:text-yellow-400 hover:bg-white hover:bg-opacity-10 transition-all duration-300 group"
