@@ -125,21 +125,21 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-8 border-t border-gray-800/50 flex flex-col items-center space-y-6">
-          <p className="text-gray-500 font-medium text-center">
+        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center space-y-8 pb-10">
+          <p className="text-gray-500 font-medium text-center text-sm md:text-base">
             © {new Date().getFullYear()} N Stars Academy. All rights reserved.
           </p>
-          <p className="text-gray-500 font-medium">
-            Made by{' '}
+          <div className="flex items-center space-x-2 text-gray-400 font-medium bg-gray-900/50 px-6 py-3 rounded-full border border-gray-800 shadow-inner">
+            <span>Made by</span>
             <a
               href="https://www.linkedin.com/in/raginee-sharma-08a256282"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-yellow-400 hover:text-yellow-300 transition-colors duration-300 hover:underline"
+              className="text-yellow-400 hover:text-yellow-300 font-bold transition-all duration-300 hover:scale-105"
             >
               Raginee Sharma
             </a>
-          </p>
+          </div>
         </div>
       </div>
     </footer>
