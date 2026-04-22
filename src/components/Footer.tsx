@@ -125,26 +125,21 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center justify-center space-y-12">
-          <p className="text-gray-500 font-medium text-center text-base">
+        <div className="pt-8 border-t border-gray-800/50 flex flex-col items-center space-y-4">
+          <p className="text-gray-500 text-sm">
             © {new Date().getFullYear()} N Stars Academy. All rights reserved.
           </p>
-          
-          {/* Extremely Visible Developer Credit */}
-          <div className="relative group">
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-yellow-400 via-white to-yellow-400 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
-            <div className="relative flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 bg-black px-12 py-6 rounded-full border-2 border-yellow-400/20 shadow-[0_0_50px_rgba(250,204,21,0.15)]">
-              <span className="text-gray-300 font-medium text-lg tracking-wide">Developed by</span>
-              <a
-                href="https://www.linkedin.com/in/raginee-sharma-08a256282"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-yellow-400 text-2xl font-black tracking-[0.15em] transition-all duration-500 transform hover:scale-110"
-              >
-                RAGINEE SHARMA
-              </a>
-            </div>
-          </div>
+          <p className="text-gray-500 text-sm">
+            Made by{' '}
+            <a
+              href="https://www.linkedin.com/in/raginee-sharma-08a256282"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-yellow-400 font-bold transition-colors duration-300"
+            >
+              Raginee Sharma
+            </a>
+          </p>
         </div>
       </div>
     </footer>
