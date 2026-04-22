@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Image, LogIn, Star, Phone } from 'lucide-react';
+import { Menu, X, Home, Image, LogIn, Star, Phone, Users } from 'lucide-react';
 
 type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner' | 'features' | 'contact' | 'about';
 
