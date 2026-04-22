@@ -5,11 +5,13 @@ const Footer: React.FC = () => {
   const navLinks = [
     { name: 'Home', href: '#home' },
     { name: 'Gallery', href: '#gallery' },
+    { name: 'Features', href: '#features' },
     { name: 'About Us', href: '#about' },
+    { name: 'Contact Us', href: '#contact' },
   ];
 
   return (
-    <footer id="contact" className="relative bg-[#050810] border-t border-gray-800 pt-20 pb-16">
+    <footer id="contact" className="relative bg-[#050810] border-t border-gray-800 pt-20 pb-20">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-20">
           
@@ -123,21 +125,21 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center justify-center space-y-10">
+        <div className="pt-12 border-t border-gray-800/50 flex flex-col items-center justify-center space-y-12">
           <p className="text-gray-500 font-medium text-center text-base">
             © {new Date().getFullYear()} N Stars Academy. All rights reserved.
           </p>
           
           {/* Extremely Visible Developer Credit */}
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative flex items-center space-x-4 bg-black px-10 py-5 rounded-full border border-gray-800 shadow-2xl">
-              <span className="text-white font-medium text-lg">Made by</span>
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-yellow-400 via-white to-yellow-400 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
+            <div className="relative flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 bg-black px-12 py-6 rounded-full border-2 border-yellow-400/20 shadow-[0_0_50px_rgba(250,204,21,0.15)]">
+              <span className="text-gray-300 font-medium text-lg tracking-wide">Developed by</span>
               <a
                 href="https://www.linkedin.com/in/raginee-sharma-08a256282"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-yellow-400 hover:text-white text-xl font-black tracking-wider transition-all duration-300 transform hover:scale-110 flex items-center"
+                className="text-white hover:text-yellow-400 text-2xl font-black tracking-[0.15em] transition-all duration-500 transform hover:scale-110"
               >
                 RAGINEE SHARMA
               </a>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Home, Image, LogIn, Star, Phone } from 'lucide-react';
 
-type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner' | 'features' | 'contact';
+type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner' | 'features' | 'contact' | 'about';
 
 interface NavigationProps {
   onNavigate: (view: ViewType) => void;
@@ -30,6 +30,11 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
       setTimeout(() => {
         document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    } else if (view === 'about') {
+      onNavigate('home');
+      setTimeout(() => {
+        document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } else {
       onNavigate(view);
     }
@@ -38,6 +43,9 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
   const navItems: { icon: JSX.Element; label: string; view: ViewType }[] = [
     { icon: <Home size={18} />, label: 'Home', view: 'home' },
     { icon: <Image size={18} />, label: 'Gallery', view: 'gallery' },
+    { icon: <Star size={18} />, label: 'Features', view: 'features' },
+    { icon: <Users size={18} />, label: 'About', view: 'about' },
+    { icon: <Phone size={18} />, label: 'Contact', view: 'contact' },
     { icon: <LogIn size={18} />, label: 'Admin', view: 'login' },
   ];
 
