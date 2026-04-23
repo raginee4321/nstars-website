@@ -201,7 +201,6 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'nstars-gallery',
-          allowed_formats: ['jpg', 'png', 'jpeg'],
         },
         (error, result) => {
           if (error) return reject(error);
