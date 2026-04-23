@@ -17,11 +17,11 @@ const Footer: React.FC = () => {
           
           {/* Column 1: Branding */}
           <div className="space-y-8">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6 ml-12">
               <img
                 src="/logo_new.jpg"
                 alt="N Stars Logo"
-                className="w-16 h-16 object-cover rounded-full shadow-2xl"
+                className="w-24 h-24 object-cover rounded-full shadow-2xl border-2 border-gray-800 flex-shrink-0 aspect-square"
               />
               <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">
                 N STARS<br />

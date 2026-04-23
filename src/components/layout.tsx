@@ -6,10 +6,12 @@ import backgroundImg from './img.jpg';
 
 interface LayoutProps {
   children: React.ReactNode;
-  onNavigate: (view: 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner') => void;
+  onNavigate: (view: any) => void;
+  isLoggedIn?: boolean;
+  onLogout?: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onNavigate }) => {
+const Layout: React.FC<LayoutProps> = ({ children, onNavigate, isLoggedIn, onLogout }) => {
   return (
     <div className="min-h-screen text-white flex flex-col relative">
       {/* Background Image */}
@@ -35,7 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNavigate }) => {
 
       {/* Foreground Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
-        <Navigation onNavigate={onNavigate} />
+        <Navigation onNavigate={onNavigate} isLoggedIn={isLoggedIn} onLogout={onLogout} />
         <main className="flex-grow px-4 pt-24 pb-8">
           {children}
         </main>

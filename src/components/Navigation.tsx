@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Image, LogIn, Star, Phone, Users } from 'lucide-react';
-
-type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner' | 'features' | 'contact' | 'about';
+import { Menu, X, Home, Image, LogIn, Star, Phone, Users, LogOut, UserPlus } from 'lucide-react';
+import { ViewType } from '../types';
 
 interface NavigationProps {
   onNavigate: (view: ViewType) => void;
+  isLoggedIn?: boolean;
+  onLogout?: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
+const Navigation: React.FC<NavigationProps> = ({ onNavigate, isLoggedIn, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -46,8 +47,16 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
     { icon: <Star size={18} />, label: 'Features', view: 'features' },
     { icon: <Users size={18} />, label: 'About', view: 'about' },
     { icon: <Phone size={18} />, label: 'Contact', view: 'contact' },
-    { icon: <LogIn size={18} />, label: 'Admin', view: 'login' },
   ];
+
+  const authItems: { icon: JSX.Element; label: string; view: ViewType; onClick?: () => void }[] = isLoggedIn 
+    ? [
+        { icon: <LogOut size={18} />, label: 'Logout', view: 'home', onClick: onLogout }
+      ]
+    : [
+        { icon: <LogIn size={18} />, label: 'Sign In', view: 'login' },
+        { icon: <UserPlus size={18} />, label: 'Sign Up', view: 'signup' }
+      ];
 
   return (
     <nav
@@ -56,11 +65,11 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo + Academy Name - Left Side */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4 ml-12">
             <img
               src="/logo_new.jpg"
               alt="N Stars Logo"
-              className="w-10 h-10 object-cover rounded-full"
+              className="w-14 h-14 object-cover rounded-full shadow-lg border border-gray-700 flex-shrink-0 aspect-square"
             />
             <span
               className="font-bold text-base md:text-lg leading-tight"
@@ -81,7 +90,7 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-6 flex-nowrap">
             {navItems.map((item) => (
               <button
                 key={item.view}
@@ -89,15 +98,53 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
                   navigateOrScroll(item.view);
                   setIsOpen(false);
                 }}
-                className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-all duration-300 group relative py-2 px-4 rounded-lg hover:bg-white hover:bg-opacity-10"
+                className="flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-all duration-300 group relative py-2 px-3 lg:px-4 rounded-lg hover:bg-white hover:bg-opacity-10"
               >
                 <span className="group-hover:scale-110 transition-transform duration-300">
                   {item.icon}
                 </span>
-                <span className="font-medium">{item.label}</span>
-                <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                <span className="font-medium text-sm lg:text-base">{item.label}</span>
               </button>
             ))}
+            <div className="h-6 w-px bg-gray-700 mx-2"></div>
+            {authItems.map((item) => {
+              const isSignUp = item.label === 'Sign Up';
+              const isLogout = item.label === 'Logout';
+              
+              if (isLogout) {
+                return (
+                  <button
+                    key={item.view + item.label}
+                    onClick={() => {
+                      item.onClick?.();
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-all duration-300 group relative py-2 px-4 rounded-lg hover:bg-red-400 hover:bg-opacity-10 border border-transparent hover:border-red-400/30"
+                  >
+                    {item.icon}
+                    <span className="font-medium text-sm lg:text-base">{item.label}</span>
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={item.view + item.label}
+                  onClick={() => {
+                    navigateOrScroll(item.view);
+                    setIsOpen(false);
+                  }}
+                  className={`
+                    px-6 py-2 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm lg:text-base whitespace-nowrap
+                    ${isSignUp 
+                      ? 'bg-gradient-to-r from-yellow-400 to-red-500 text-black shadow-lg hover:shadow-yellow-500/20' 
+                      : 'border border-gray-600 text-white hover:border-yellow-400 hover:text-yellow-400'}
+                  `}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Mobile menu button */}
@@ -123,7 +170,7 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
         {/* Mobile Navigation */}
         <div
           className={`md:hidden transition-all duration-500 overflow-hidden ${
-            isOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+            isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
           <div className="py-4 space-y-2 bg-black bg-opacity-90 backdrop-blur-lg rounded-lg mt-2 border border-gray-700">
@@ -135,7 +182,6 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
                   setIsOpen(false);
                 }}
                 className="flex items-center space-x-3 w-full text-left px-6 py-3 text-gray-300 hover:text-yellow-400 hover:bg-white hover:bg-opacity-10 transition-all duration-300 group"
-                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <span className="group-hover:scale-110 transition-transform duration-300">
                   {item.icon}
@@ -143,6 +189,46 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}
+            <div className="border-t border-gray-700 my-2"></div>
+            {authItems.map((item) => {
+              const isSignUp = item.label === 'Sign Up';
+              const isLogout = item.label === 'Logout';
+
+              if (isLogout) {
+                return (
+                  <button
+                    key={item.view + item.label}
+                    onClick={() => {
+                      item.onClick?.();
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-3 w-full text-left px-6 py-3 text-red-400 hover:bg-red-400 hover:bg-opacity-10 transition-all duration-300 group"
+                  >
+                    {item.icon}
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              }
+
+              return (
+                <div key={item.view + item.label} className="px-6 py-2">
+                  <button
+                    onClick={() => {
+                      navigateOrScroll(item.view);
+                      setIsOpen(false);
+                    }}
+                    className={`
+                      w-full py-3 rounded-xl font-bold transition-all duration-300
+                      ${isSignUp 
+                        ? 'bg-gradient-to-r from-yellow-400 to-red-500 text-black shadow-lg' 
+                        : 'border border-gray-600 text-white hover:border-yellow-400 hover:text-yellow-400'}
+                    `}
+                  >
+                    {item.label}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

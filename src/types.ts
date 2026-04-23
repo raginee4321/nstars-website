@@ -19,5 +19,5 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Add 'qrscanner' to the ViewType
-export type ViewType = 'home' | 'gallery' | 'login' | 'admin' | 'qrscanner';
+// Add 'qrscanner', 'signup', and 'verify-otp' to the ViewType
+export type ViewType = 'home' | 'gallery' | 'login' | 'signup' | 'verify-otp' | 'admin' | 'qrscanner';

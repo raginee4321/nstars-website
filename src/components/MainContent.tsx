@@ -1,7 +1,13 @@
 import React from 'react';
 import { Users, Trophy, Calendar, Award, Heart, Target, Zap, LogIn } from 'lucide-react';
 
-const MainContent: React.FC = () => {
+import { ViewType } from '../types';
+
+interface MainContentProps {
+  onNavigate: (view: ViewType) => void;
+}
+
+const MainContent: React.FC<MainContentProps> = ({ onNavigate }) => {
   const features = [
     {
       icon: <Users className="w-12 h-12 mb-4 text-yellow-400 group-hover:scale-110 transition-transform duration-300" />,
@@ -83,13 +89,19 @@ const MainContent: React.FC = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <button className="group relative px-12 py-5 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(250,204,21,0.4)] hover:shadow-[0_0_50px_rgba(250,204,21,0.6)] overflow-hidden">
+            <button 
+              onClick={() => onNavigate('signup')}
+              className="group relative px-12 py-5 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(250,204,21,0.4)] hover:shadow-[0_0_50px_rgba(250,204,21,0.6)] overflow-hidden"
+            >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               <span className="relative flex items-center">
                 Register Now
               </span>
             </button>
-            <button className="group px-12 py-5 rounded-xl border-2 border-yellow-400 text-yellow-400 font-bold text-xl transition-all duration-300 hover:bg-yellow-400 hover:text-black flex items-center space-x-3">
+            <button 
+              onClick={() => onNavigate('signup')}
+              className="group px-12 py-5 rounded-xl border-2 border-yellow-400 text-yellow-400 font-bold text-xl transition-all duration-300 hover:bg-yellow-400 hover:text-black flex items-center space-x-3"
+            >
               <LogIn className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
               <span>Sign Up</span>
             </button>
@@ -169,7 +181,7 @@ const MainContent: React.FC = () => {
                 <h3
                   className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6 flex items-center"
                 >
-                  <div className="w-12 h-0.5 bg-yellow-400 mr-4 transform origin-left group-hover:scale-x-150 transition-transform duration-500"></div>
+                  <div className="w-12 h-0.5 bg-yellow-400 mr-8 flex-shrink-0 transform origin-left group-hover:scale-x-110 transition-transform duration-500"></div>
                   Our Story
                 </h3>
                 <p className="text-gray-300 leading-relaxed text-lg md:text-xl italic font-light">
@@ -181,7 +193,7 @@ const MainContent: React.FC = () => {
                 <h3
                   className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6 flex items-center"
                 >
-                  <div className="w-12 h-0.5 bg-yellow-400 mr-4 transform origin-left group-hover:scale-x-150 transition-transform duration-500"></div>
+                  <div className="w-12 h-0.5 bg-yellow-400 mr-8 flex-shrink-0 transform origin-left group-hover:scale-x-110 transition-transform duration-500"></div>
                   Our Mission
                 </h3>
                 <p className="text-gray-300 leading-relaxed text-lg md:text-xl italic font-light">

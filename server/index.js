@@ -7,6 +7,9 @@ import { dirname, join } from 'path';
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
 // Initialize environment variables
 dotenv.config(); // Standard load from .env in process.cwd()
@@ -75,6 +78,32 @@ RegistrationSchema.set('toJSON', {
 });
 
 const Registration = mongoose.model('Registration', RegistrationSchema);
+
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  password: { type: String, required: true },
+  isVerified: { type: Boolean, default: false },
+  otp: { type: String },
+  otpExpires: { type: Date },
+  isAdmin: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+});
+
+UserSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.password;
+    delete ret.otp;
+    delete ret.otpExpires;
+  }
+});
+
+const User = mongoose.model('User', UserSchema);
 
 // Middleware
 app.use(cors({
@@ -232,26 +261,193 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  
-  // Check for admin credentials
-  if (username === 'admin' && password === 'admin12345') {
+// Nodemailer Setup
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
+const sendOTPEmail = async (email, otp) => {
+  const mailOptions = {
+    from: `"N Stars Academy" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: 'Verify your email - N Stars Academy',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #ef4444; margin: 0;">N Stars Academy</h1>
+          <p style="color: #64748b; font-size: 16px;">Elevate Your Journey</p>
+        </div>
+        <div style="padding: 24px; background-color: #f8fafc; border-radius: 8px; text-align: center;">
+          <h2 style="color: #1e293b; margin-top: 0;">Verify Your Email</h2>
+          <p style="color: #475569; font-size: 16px;">Please use the following 6-digit code to verify your account:</p>
+          <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #ef4444; margin: 24px 0; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 8px;">
+            ${otp}
+          </div>
+          <p style="color: #64748b; font-size: 14px;">This code will expire in 10 minutes.</p>
+        </div>
+        <div style="margin-top: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+          <p>&copy; 2024 N Stars Academy. All rights reserved.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending email:', error);
+    // We don't throw here to avoid blocking the signup flow if email fails during testing,
+    // but in production you might want to handle this more strictly.
+  }
+};
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const user = new User({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      otp,
+      otpExpires
+    });
+
+    await user.save();
+    
+    // Send real-time OTP email
+    await sendOTPEmail(email, otp);
+    
+    console.log(`New user created: ${email}. OTP: ${otp}`);
+
+    res.json({ success: true, message: 'Signup successful. Please verify OTP.' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ success: false, message: 'Signup failed', error: error.message });
+  }
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email, otp, otpExpires: { $gt: Date.now() } });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Account verified successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Verification failed' });
+  }
+});
+
+app.post('/api/auth/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, message: 'Account already verified' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000;
+
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    await sendOTPEmail(email, otp);
+
+    res.json({ success: true, message: 'OTP resent successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to resend OTP' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Admin check (keep existing admin login for now)
+    if (email === 'admin' || email === 'admin@nstars.com') {
+      if (password === 'admin12345') {
+        const token = jwt.sign({ id: 'admin', isAdmin: true }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+        return res.json({ 
+          success: true, 
+          token,
+          user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' }
+        });
+      }
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    if (!user.isVerified) {
+      return res.status(400).json({ success: false, message: 'Please verify your account first' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+
     res.json({ 
       success: true, 
-      message: 'Admin login successful',
-      user: { username: 'admin', role: 'admin' }
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        role: user.isAdmin ? 'admin' : 'user'
+      }
     });
-    return;
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Login failed' });
   }
-  
-  // Regular user login (placeholder)
-  console.log('Login attempt:', { username });
-  res.json({ 
-    success: true, 
-    message: 'Login successful',
-    user: { username, role: 'user' }
-  });
+});
+
+app.post('/api/login', (req, res) => {
+  // Redirecting to /api/auth/login logic if needed
+  res.status(410).json({ success: false, message: 'Please use /api/auth/login' });
 });
 
 // Global Error Handler
