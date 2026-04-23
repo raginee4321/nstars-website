@@ -197,8 +197,10 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     // Upload directly using Cloudinary Stream
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        {
           folder: 'nstars-gallery',
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET,
         },
         (error, result) => {
           if (error) return reject(error);
