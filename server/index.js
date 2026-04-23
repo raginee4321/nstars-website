@@ -146,12 +146,12 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       cloudinaryPing: 'Skipped for diagnostic',
       envDebug: {
-        hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-        hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-        secretHash: secretHash,
-        urlHash: urlHash,
-        secretLength: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.length : 0,
-        secretEnd: process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.slice(-3) : 'none'
+      envDebug: {
+        hasCloudName: !!(process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME),
+        hasApiKey: !!(process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY),
+        secretLength: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.length || 0,
+        secretEnd: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.slice(-3) || 'none'
+      }
       }
     });
   } catch (error) {
