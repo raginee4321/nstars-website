@@ -40,7 +40,7 @@ const MainContent: React.FC = () => {
     <div className="max-w-7xl mx-auto text-center">
 
       {/* Unified Hero Section */}
-      <div className="mb-12 relative py-12 px-6 overflow-hidden">
+      <div className="mb-8 relative py-8 px-6 overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-yellow-400/5 rounded-full blur-[120px] animate-pulse"></div>
@@ -51,7 +51,7 @@ const MainContent: React.FC = () => {
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Academy Name */}
           <h1
-            className="text-4xl md:text-6xl lg:text-8xl font-bold mb-4 leading-tight"
+            className="text-4xl md:text-6xl lg:text-8xl font-bold mb-2 leading-tight"
           >
             <span style={{ color: '#111111', WebkitTextStroke: '1px rgba(255,255,255,0.9)' }}>N</span>
             {' '}
@@ -62,7 +62,7 @@ const MainContent: React.FC = () => {
             <span style={{ color: '#ffffff' }}>S</span>
           </h1>
           <h1
-            className="text-3xl md:text-5xl lg:text-7xl font-bold mb-10 leading-tight"
+            className="text-3xl md:text-5xl lg:text-7xl font-bold mb-6 leading-tight"
           >
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 animate-gradient-x">
               Taekwondo Academy
@@ -71,13 +71,13 @@ const MainContent: React.FC = () => {
 
           {/* Tagline */}
           <p
-            className="text-base md:text-xl text-yellow-400 max-w-3xl mx-auto leading-relaxed tracking-[0.3em] font-medium mb-12 uppercase"
+            className="text-[11px] sm:text-base md:text-xl text-yellow-400 max-w-3xl mx-auto leading-relaxed tracking-[0.1em] sm:tracking-[0.3em] font-medium mb-8 uppercase"
           >
             SPORTS • FITNESS • SELF DEFENCE • DISCIPLINE
           </p>
 
           {/* Benefits Paragraph */}
-          <p className="text-xl md:text-3xl text-gray-200 font-light max-w-4xl mx-auto leading-relaxed mb-16">
+          <p className="text-xl md:text-3xl text-gray-200 font-light max-w-4xl mx-auto leading-relaxed mb-10">
             Join hundreds of students mastering the art of Taekwondo. Under the guidance of expert masters, build unshakeable confidence, master world-class skills, and become part of a 15+ year legacy of excellence.
           </p>
 
@@ -97,7 +97,7 @@ const MainContent: React.FC = () => {
         </div>
 
         {/* Decorative divider */}
-        <div className="w-32 h-1 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mt-8 animate-pulse"></div>
+        <div className="w-32 h-1 bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent mx-auto mt-4 animate-pulse"></div>
       </div>
 
       {/* Feature Cards */}

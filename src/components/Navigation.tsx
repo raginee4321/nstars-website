@@ -58,7 +58,7 @@ const Navigation: React.FC<NavigationProps> = ({ onNavigate }) => {
           {/* Logo + Academy Name - Left Side */}
           <div className="flex items-center space-x-3">
             <img
-              src="/logo1.png"
+              src="/logo_new.jpg"
               alt="N Stars Logo"
               className="w-10 h-10 object-cover rounded-full"
             />

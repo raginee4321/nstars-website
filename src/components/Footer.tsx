@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
           <div className="space-y-8">
             <div className="flex items-center space-x-4">
               <img
-                src="/logo1.png"
+                src="/logo_new.jpg"
                 alt="N Stars Logo"
                 className="w-16 h-16 object-cover rounded-full shadow-2xl"
               />
