@@ -1,5 +1,5 @@
 const API_BASE_URL = import.meta.env.PROD 
-  ? '/api' 
+  ? 'https://nstars-website.vercel.app/api' 
   : 'http://localhost:5000/api';
 
 export const authApi = {
