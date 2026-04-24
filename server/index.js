@@ -121,7 +121,7 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith('image/')) {
@@ -142,8 +142,8 @@ app.get('/api/health', async (req, res) => {
     const secretHash = process.env.CLOUDINARY_API_SECRET ? crypto.createHash('md5').update(process.env.CLOUDINARY_API_SECRET).digest('hex') : 'none';
     const urlHash = process.env.CLOUDINARY_URL ? crypto.createHash('md5').update(process.env.CLOUDINARY_URL).digest('hex') : 'none';
 
-    res.json({ 
-      status: 'Server is running', 
+    res.json({
+      status: 'Server is running',
       timestamp: new Date().toISOString(),
       cloudinaryPing: 'Skipped for diagnostic',
       envDebug: {
@@ -195,14 +195,15 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     }
 
     const { description } = req.body;
-    
+
     // Upload directly using Cloudinary Stream
-    // Credentials are already set via cloudinary.config() at the top of this file.
-    // Do NOT pass cloud_name/api_key/api_secret here — it causes signature mismatches.
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'nstars-gallery',
+          cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME)?.trim(),
+          api_key: (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY)?.trim(),
+          api_secret: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.trim(),
         },
         (error, result) => {
           if (error) return reject(error);
@@ -214,14 +215,14 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
 
     const newImage = new GalleryItem({
       description: description || 'No description',
-      image_path: uploadResult.secure_url, 
+      image_path: uploadResult.secure_url,
       cloudinary_id: uploadResult.public_id,
     });
 
     await newImage.save();
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Image uploaded successfully',
       image: newImage
     });
@@ -313,7 +314,7 @@ const sendOTPEmail = async (email, otp) => {
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -337,10 +338,10 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     await user.save();
-    
+
     // Send real-time OTP email
     await sendOTPEmail(email, otp);
-    
+
     console.log(`New user created: ${email}. OTP: ${otp}`);
 
     res.json({ success: true, message: 'Signup successful. Please verify OTP.' });
@@ -401,13 +402,13 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     // Admin check (keep existing admin login for now)
     if (email === 'admin' || email === 'admin@nstars.com') {
       if (password === 'admin12345') {
         const token = jwt.sign({ id: 'admin', isAdmin: true }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
-        return res.json({ 
-          success: true, 
+        return res.json({
+          success: true,
           token,
           user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' }
         });
@@ -430,8 +431,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       token,
       user: {
         id: user._id,

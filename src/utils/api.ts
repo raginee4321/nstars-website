@@ -1,8 +1,6 @@
 import { GalleryImage, ApiResponse, User } from '../types';
 
-// Always use relative /api in production (routed via vercel.json rewrites to the serverless function).
-// Never use VITE_API_BASE_URL to avoid stale references to old hosting providers.
-const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 class ApiService {
   private async request<T>(
@@ -23,7 +21,7 @@ class ApiService {
       });
 
       const responseData = await response.json();
-      
+
       // Handle both wrapped { success, data } and raw responses
       if (responseData && typeof responseData === 'object' && 'success' in responseData) {
         return responseData as ApiResponse<T>;
@@ -78,7 +76,7 @@ class ApiService {
   }
 
   async login(username: string, password: string): Promise<ApiResponse<User>> {
-    return this.request<User>('/auth/login', {
+    return this.request<User>('/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
