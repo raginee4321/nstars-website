@@ -10,6 +10,7 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import { mkdirSync, existsSync } from 'fs';
 
 // Initialize environment variables
 dotenv.config(); // Standard load from .env in process.cwd()
@@ -149,7 +150,8 @@ app.get('/api/health', async (req, res) => {
         hasCloudName: !!(process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME),
         hasApiKey: !!(process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY),
         secretLength: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.length || 0,
-        secretEnd: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.slice(-3) || 'none'
+        mongoStatus: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected (' + mongoose.connection.readyState + ')',
+        hasMongoUri: !!process.env.MONGODB_URI
       }
     });
   } catch (error) {
@@ -197,6 +199,7 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     // Upload directly using Cloudinary Stream
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
+        {
           folder: 'nstars-gallery',
           cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME,
           api_key: process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY,
@@ -459,11 +462,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Create uploads directory if it doesn't exist
-import { mkdirSync, existsSync } from 'fs';
-const uploadsDir = join(__dirname, 'uploads/gallery');
-if (!existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true });
+// Create uploads directory if it doesn't exist - skipped on Vercel read-only filesystem
+if (!process.env.VERCEL) {
+  try {
+    const uploadsDir = join(__dirname, 'uploads/gallery');
+    if (!existsSync(uploadsDir)) {
+      mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('Could not create uploads directory:', err.message);
+  }
 }
 
 // Export the app for Vercel
