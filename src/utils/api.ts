@@ -1,6 +1,8 @@
 import { GalleryImage, ApiResponse, User } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+// Always use relative /api in production (routed via vercel.json rewrites to the serverless function).
+// Never use VITE_API_BASE_URL to avoid stale references to old hosting providers.
+const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
 
 class ApiService {
   private async request<T>(
@@ -76,7 +78,7 @@ class ApiService {
   }
 
   async login(username: string, password: string): Promise<ApiResponse<User>> {
-    return this.request<User>('/login', {
+    return this.request<User>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });

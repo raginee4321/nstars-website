@@ -197,13 +197,12 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     const { description } = req.body;
     
     // Upload directly using Cloudinary Stream
+    // Credentials are already set via cloudinary.config() at the top of this file.
+    // Do NOT pass cloud_name/api_key/api_secret here — it causes signature mismatches.
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'nstars-gallery',
-          cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME)?.trim(),
-          api_key: (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY)?.trim(),
-          api_secret: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.trim(),
         },
         (error, result) => {
           if (error) return reject(error);
