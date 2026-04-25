@@ -5,11 +5,11 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import mongoose from 'mongoose';
-import { v2 as cloudinary } from 'cloudinary';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, createHash } from 'fs';
+import crypto from 'crypto';
 
 // ─── Environment Variables ────────────────────────────────────────────────────
 dotenv.config();
@@ -32,22 +32,57 @@ const env = (...names) => {
   return '';
 };
 
+// ─── Cloudinary helpers (pure HTTP, no SDK signing) ───────────────────────────
+const getCloudinaryConfig = () => ({
+  cloudName: env('CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME'),
+  apiKey:    env('CLOUDINARY_API_KEY',    'MY_API_KEY'),
+  apiSecret: env('CLOUDINARY_API_SECRET', 'MY_API_SECRET'),
+});
+
+// Generate SHA-1 signature for signed Cloudinary API calls
+const generateCloudinarySignature = (params, apiSecret) => {
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+  return crypto.createHash('sha1').update(sortedParams + apiSecret).digest('hex');
+};
+
+// Delete an asset from Cloudinary using direct HTTP POST (no SDK)
+const cloudinaryDelete = async (publicId) => {
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Cloudinary credentials not configured');
+  }
+
+  const timestamp = Math.round(Date.now() / 1000);
+  const params    = { public_id: publicId, timestamp };
+  const signature = generateCloudinarySignature(params, apiSecret);
+
+  const formData  = new FormData();
+  formData.append('public_id', publicId);
+  formData.append('timestamp', String(timestamp));
+  formData.append('api_key',   apiKey);
+  formData.append('signature', signature);
+
+  const res  = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
+    { method: 'POST', body: formData }
+  );
+  const data = await res.json();
+
+  if (data.result !== 'ok' && data.result !== 'not found') {
+    throw new Error(`Cloudinary delete failed: ${JSON.stringify(data)}`);
+  }
+
+  return data;
+};
+
 // ─── MongoDB ──────────────────────────────────────────────────────────────────
 mongoose.connect(env('MONGODB_URI'))
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
-
-// ─── Cloudinary (only used for DELETE — signed) ───────────────────────────────
-// For UPLOAD we use unsigned preset via fetch (no signature needed).
-const configureCloudinary = () => {
-  cloudinary.config({
-    cloud_name: env('CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME'),
-    api_key:    env('CLOUDINARY_API_KEY',    'MY_API_KEY'),
-    api_secret: env('CLOUDINARY_API_SECRET', 'MY_API_SECRET'),
-    secure:     true,
-  });
-  return cloudinary;
-};
 
 // ─── Mongoose Models ──────────────────────────────────────────────────────────
 const GallerySchema = new mongoose.Schema({
@@ -157,20 +192,17 @@ const sendOTPEmail = async (email, otp) => {
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  const cloudName = env('CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME');
-  const apiKey    = env('CLOUDINARY_API_KEY',    'MY_API_KEY');
-  const apiSecret = env('CLOUDINARY_API_SECRET', 'MY_API_SECRET');
-
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
   res.json({
     status: 'Server is running',
     timestamp: new Date().toISOString(),
     cloudinary: {
       cloud_name_set:    !!cloudName,
+      cloud_name:        cloudName,
       api_key_set:       !!apiKey,
+      api_key_last4:     apiKey.slice(-4),
       api_secret_set:    !!apiSecret,
       api_secret_length: apiSecret.length,
-      api_key_last4:     apiKey.slice(-4),
-      cloud_name:        cloudName,
     },
     mongo: mongoose.connection.readyState === 1
       ? 'Connected'
@@ -189,7 +221,7 @@ app.get('/api/events', (_req, res) => {
   });
 });
 
-// Gallery – fetch
+// Gallery – fetch all
 app.get('/api/gallery', async (req, res) => {
   const start = Date.now();
   try {
@@ -204,17 +236,10 @@ app.get('/api/gallery', async (req, res) => {
   }
 });
 
-// ─── Gallery – UPLOAD ─────────────────────────────────────────────────────────
-//
-// Uses UNSIGNED upload preset — no API secret / signature needed at all.
-//
-// ✅ ONE-TIME SETUP in Cloudinary Dashboard:
-//   1. Go to Settings → Upload → Upload Presets → Add upload preset
-//   2. Preset name : nstars_gallery
-//   3. Signing Mode: Unsigned
-//   4. Folder      : nstars-gallery
-//   5. Save
-//
+// ─── Gallery – UPLOAD (unsigned preset, no signature needed) ──────────────────
+// ONE-TIME Cloudinary setup:
+//   Settings → Upload → Upload Presets → Add upload preset
+//   Name: nstars_gallery | Signing Mode: Unsigned | Folder: nstars-gallery → Save
 // ─────────────────────────────────────────────────────────────────────────────
 app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req, res) => {
   try {
@@ -222,7 +247,7 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const cloudName = env('CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME');
+    const { cloudName } = getCloudinaryConfig();
     if (!cloudName) {
       return res.status(500).json({ success: false, message: 'CLOUDINARY_CLOUD_NAME is not configured' });
     }
@@ -231,10 +256,9 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     const base64  = req.file.buffer.toString('base64');
     const dataUri = `data:${req.file.mimetype};base64,${base64}`;
 
-    // Build multipart form for Cloudinary unsigned upload
     const formData = new FormData();
     formData.append('file',          dataUri);
-    formData.append('upload_preset', 'nstars_gallery'); // ← must match preset name above
+    formData.append('upload_preset', 'nstars_gallery'); // ← your unsigned preset
     formData.append('folder',        'nstars-gallery');
 
     const cloudinaryRes = await fetch(
@@ -245,7 +269,7 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     const uploadResult = await cloudinaryRes.json();
 
     if (uploadResult.error) {
-      console.error('Cloudinary error:', uploadResult.error);
+      console.error('Cloudinary upload error:', uploadResult.error);
       return res.status(500).json({ success: false, message: uploadResult.error.message });
     }
 
@@ -256,7 +280,6 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     });
 
     await newImage.save();
-
     res.json({ success: true, message: 'Image uploaded successfully', image: newImage });
   } catch (error) {
     console.error('Upload error:', error);
@@ -264,7 +287,7 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
   }
 });
 
-// Gallery – delete
+// ─── Gallery – DELETE (signed via direct HTTP, no SDK) ────────────────────────
 app.delete('/api/admin/gallery/:id', async (req, res) => {
   try {
     const item = await GalleryItem.findById(req.params.id);
@@ -272,9 +295,9 @@ app.delete('/api/admin/gallery/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Image not found' });
     }
 
+    // Delete from Cloudinary using direct HTTP (bypasses SDK signature bug)
     if (item.cloudinary_id) {
-      const cl = configureCloudinary();
-      await cl.uploader.destroy(item.cloudinary_id);
+      await cloudinaryDelete(item.cloudinary_id);
     }
 
     await GalleryItem.findByIdAndDelete(req.params.id);
