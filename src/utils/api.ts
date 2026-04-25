@@ -1,6 +1,6 @@
 import { GalleryImage, ApiResponse, User } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 class ApiService {
   private async request<T>(
@@ -68,7 +68,7 @@ class ApiService {
     }
   }
 
-  async deleteGalleryImage(imageId: number): Promise<ApiResponse<null>> {
+  async deleteGalleryImage(imageId: string): Promise<ApiResponse<null>> {
     // Provide the generic parameter so TS knows the shape
     return this.request<null>(`/admin/gallery/${imageId}`, {
       method: 'DELETE',

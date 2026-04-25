@@ -1,7 +1,4 @@
-// Use relative /api in production — Vercel rewrites route it to the serverless function.
-const API_BASE_URL = import.meta.env.PROD 
-  ? '/api' 
-  : 'http://localhost:5000/api';
+import { API_BASE_URL } from '../utils/api';
 
 export const authApi = {
   login: async (credentials: any) => {
@@ -11,7 +8,13 @@ export const authApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        return { error: `Server error: ${response.status}` };
+      }
       if (!response.ok) return { error: data.message || 'Login failed' };
       return { data };
     } catch (error) {
@@ -25,7 +28,13 @@ export const authApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        return { error: `Server error: ${response.status}` };
+      }
       if (!response.ok) return { error: data.message || 'Signup failed', rawError: data.error };
       return { data };
     } catch (error) {
@@ -39,7 +48,13 @@ export const authApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(otpData),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        return { error: `Server error: ${response.status}` };
+      }
       if (!response.ok) return { error: data.message || 'Verification failed' };
       return { data };
     } catch (error) {
@@ -53,7 +68,13 @@ export const authApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailData),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        return { error: `Server error: ${response.status}` };
+      }
       if (!response.ok) return { error: data.message || 'Resend failed' };
       return { data };
     } catch (error) {

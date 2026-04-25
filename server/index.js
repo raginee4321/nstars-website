@@ -189,9 +189,10 @@ const sendOTPEmail = async (email, otp) => {
 };
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+const apiRouter = express.Router();
 
 // Health check
-app.get('/api/health', (_req, res) => {
+apiRouter.get('/health', (_req, res) => {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
   res.json({
     status: 'Server is running',
@@ -211,7 +212,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Events
-app.get('/api/events', (_req, res) => {
+apiRouter.get('/events', (_req, res) => {
   res.json({
     success: true,
     data: [
@@ -222,7 +223,7 @@ app.get('/api/events', (_req, res) => {
 });
 
 // Gallery – fetch all
-app.get('/api/gallery', async (req, res) => {
+apiRouter.get('/gallery', async (req, res) => {
   const start = Date.now();
   try {
     const limit  = parseInt(req.query.limit) || 100;
@@ -236,42 +237,25 @@ app.get('/api/gallery', async (req, res) => {
   }
 });
 
-// ─── Gallery – UPLOAD (kept for backward compat, but new flow uses /save) ────
-// ONE-TIME Cloudinary setup:
-//   Settings → Upload → Upload Presets → Add upload preset
-//   Name: nstars_gallery | Signing Mode: Unsigned | Folder: nstars-gallery → Save
-// ─────────────────────────────────────────────────────────────────────────────
-app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req, res) => {
+// Gallery – UPLOAD (legacy/buffer flow)
+apiRouter.post('/admin/gallery/upload', upload.single('gallery_image'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
-    }
-
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
     const { cloudName } = getCloudinaryConfig();
-    if (!cloudName) {
-      return res.status(500).json({ success: false, message: 'CLOUDINARY_CLOUD_NAME is not configured' });
-    }
+    if (!cloudName) return res.status(500).json({ success: false, message: 'CLOUDINARY_CLOUD_NAME is not configured' });
 
-    // Convert buffer → base64 data URI
     const base64  = req.file.buffer.toString('base64');
     const dataUri = `data:${req.file.mimetype};base64,${base64}`;
 
     const formData = new FormData();
     formData.append('file',          dataUri);
-    formData.append('upload_preset', 'nstars_gallery'); // ← your unsigned preset
+    formData.append('upload_preset', 'nstars_gallery');
     formData.append('folder',        'nstars-gallery');
 
-    const cloudinaryRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: formData }
-    );
-
+    const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
     const uploadResult = await cloudinaryRes.json();
 
-    if (uploadResult.error) {
-      console.error('Cloudinary upload error:', uploadResult.error);
-      return res.status(500).json({ success: false, message: uploadResult.error.message });
-    }
+    if (uploadResult.error) return res.status(500).json({ success: false, message: uploadResult.error.message });
 
     const newImage = new GalleryItem({
       description:   req.body.description || 'No description',
@@ -287,15 +271,12 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
   }
 });
 
-// ─── Gallery – SAVE (browser uploads to Cloudinary directly, then POSTs URL here) ──
-// This is the new preferred flow: Browser → Cloudinary (unsigned), then → here to save URL
-app.post('/api/admin/gallery/save', async (req, res) => {
+// Gallery – SAVE (New preferred flow)
+apiRouter.post('/admin/gallery/save', async (req, res) => {
+  console.log('Received gallery save request:', req.body);
   try {
     const { description, image_path, cloudinary_id } = req.body;
-
-    if (!image_path) {
-      return res.status(400).json({ success: false, message: 'image_path is required' });
-    }
+    if (!image_path) return res.status(400).json({ success: false, message: 'image_path is required' });
 
     const newImage = new GalleryItem({
       description:   description || 'No description',
@@ -304,26 +285,20 @@ app.post('/api/admin/gallery/save', async (req, res) => {
     });
 
     await newImage.save();
+    console.log('Image saved successfully to MongoDB:', newImage.id);
     res.json({ success: true, message: 'Image saved successfully', image: newImage });
   } catch (error) {
-    console.error('Save error:', error);
+    console.error('Save error in MongoDB:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ─── Gallery – DELETE (signed via direct HTTP, no SDK) ────────────────────────
-app.delete('/api/admin/gallery/:id', async (req, res) => {
+// Gallery – DELETE
+apiRouter.delete('/admin/gallery/:id', async (req, res) => {
   try {
     const item = await GalleryItem.findById(req.params.id);
-    if (!item) {
-      return res.status(404).json({ success: false, message: 'Image not found' });
-    }
-
-    // Delete from Cloudinary using direct HTTP (bypasses SDK signature bug)
-    if (item.cloudinary_id) {
-      await cloudinaryDelete(item.cloudinary_id);
-    }
-
+    if (!item) return res.status(404).json({ success: false, message: 'Image not found' });
+    if (item.cloudinary_id) await cloudinaryDelete(item.cloudinary_id);
     await GalleryItem.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (error) {
@@ -333,7 +308,7 @@ app.delete('/api/admin/gallery/:id', async (req, res) => {
 });
 
 // Registration
-app.post('/api/register', async (req, res) => {
+apiRouter.post('/register', async (req, res) => {
   try {
     const { name, email, phone } = req.body;
     const registration = new Registration({ name, email, phone });
@@ -345,14 +320,11 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Auth – Signup
-app.post('/api/auth/signup', async (req, res) => {
+apiRouter.post('/auth/signup', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
-
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
-    }
+    if (existingUser) return res.status(400).json({ success: false, message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp            = Math.floor(100000 + Math.random() * 900000).toString();
@@ -361,8 +333,6 @@ app.post('/api/auth/signup', async (req, res) => {
     const user = new User({ name, email, phone, password: hashedPassword, otp, otpExpires });
     await user.save();
     await sendOTPEmail(email, otp);
-
-    console.log(`New user: ${email}. OTP: ${otp}`);
     res.json({ success: true, message: 'Signup successful. Please verify OTP.' });
   } catch (error) {
     console.error('Signup error:', error);
@@ -371,20 +341,15 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 // Auth – Verify OTP
-app.post('/api/auth/verify-otp', async (req, res) => {
+apiRouter.post('/auth/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
     const user = await User.findOne({ email, otp, otpExpires: { $gt: Date.now() } });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-    }
-
+    if (!user) return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     user.isVerified = true;
     user.otp        = undefined;
     user.otpExpires = undefined;
     await user.save();
-
     res.json({ success: true, message: 'Account verified successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Verification failed' });
@@ -392,19 +357,16 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 });
 
 // Auth – Resend OTP
-app.post('/api/auth/resend-otp', async (req, res) => {
+apiRouter.post('/auth/resend-otp', async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
-
     if (!user)           return res.status(404).json({ success: false, message: 'User not found' });
     if (user.isVerified) return res.status(400).json({ success: false, message: 'Account already verified' });
-
     user.otp        = Math.floor(100000 + Math.random() * 900000).toString();
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
     await sendOTPEmail(email, user.otp);
-
     res.json({ success: true, message: 'OTP resent successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to resend OTP' });
@@ -412,56 +374,36 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 });
 
 // Auth – Login
-app.post('/api/auth/login', async (req, res) => {
+apiRouter.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-
-    // Hardcoded admin shortcut
     if (email === 'admin' || email === 'admin@nstars.com') {
       if (password === 'admin12345') {
         const token = jwt.sign({ id: 'admin', isAdmin: true }, JWT_SECRET, { expiresIn: '1d' });
-        return res.json({
-          success: true, token,
-          user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' },
-        });
+        return res.json({ success: true, token, user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' } });
       }
     }
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
-    if (!user.isVerified) {
-      return res.status(400).json({ success: false, message: 'Please verify your account first' });
-    }
-
+    if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    if (!user.isVerified) return res.status(400).json({ success: false, message: 'Please verify your account first' });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
-
+    if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid email or password' });
     const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '1d' });
-
-    res.json({
-      success: true, token,
-      user: {
-        id:      user._id,
-        name:    user.name,
-        email:   user.email,
-        isAdmin: user.isAdmin,
-        role:    user.isAdmin ? 'admin' : 'user',
-      },
-    });
+    res.json({ success: true, token, user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, role: user.isAdmin ? 'admin' : 'user' } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
 
 // Legacy login
-app.post('/api/login', (_req, res) => {
+apiRouter.post('/login', (_req, res) => {
   res.status(410).json({ success: false, message: 'Please use /api/auth/login' });
 });
+
+// Mount the router at both /api and / to handle different Vercel routing scenarios
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

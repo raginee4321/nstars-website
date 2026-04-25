@@ -1,12 +1,12 @@
 export interface GalleryImage {
-  id: number;
+  id: string;
   image_path: string;
   description: string;
   created_at: string;
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email?: string;
   role: 'admin' | 'user';

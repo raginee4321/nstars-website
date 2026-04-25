@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Trash2, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { GalleryImage } from '../types';
-import { api } from '../utils/api';
+import { api, API_BASE_URL } from '../utils/api';
 
 
 interface AdminDashboardProps {
@@ -67,8 +67,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       }
 
       // ── Step 2: Save the Cloudinary URL + description to our server ──────────
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
-      const saveRes = await fetch(`${API_BASE}/admin/gallery/save`, {
+      const saveRes = await fetch(`${API_BASE_URL}/admin/gallery/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -78,9 +77,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         }),
       });
 
-      const saveData = await saveRes.json();
-      if (!saveData.success) {
-        throw new Error(saveData.message || 'Failed to save image record');
+      let saveData;
+      const responseText = await saveRes.text();
+      
+      try {
+        saveData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        throw new Error(`Failed to parse server response as JSON. Status: ${saveRes.status} ${saveRes.statusText}. Response: ${responseText.slice(0, 100)}`);
+      }
+
+      if (!saveRes.ok || !saveData.success) {
+        throw new Error(saveData.message || `Server error: ${saveRes.status} ${saveRes.statusText}`);
       }
 
       setDescription('');
@@ -89,14 +96,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       loadGalleryImages();
       alert('Image uploaded successfully!');
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Upload error details:', error);
       alert('Upload failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (imageId: number) => {
+  const handleDelete = async (imageId: string) => {
     if (!confirm('Are you sure you want to delete this image?')) return;
 
     try {
