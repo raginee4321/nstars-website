@@ -6,15 +6,13 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { mkdirSync, existsSync } from 'fs';
 
 // Initialize environment variables
-dotenv.config(); // Standard load from .env in process.cwd()
-// Fallback if started from a subdirectory
+dotenv.config();
 if (!process.env.MONGODB_URI) {
   dotenv.config({ path: join(dirname(dirname(fileURLToPath(import.meta.url))), '.env') });
 }
@@ -25,44 +23,35 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// MongoDB Connection
+// ─── MongoDB Connection ───────────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nstars_taekwondo';
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Helper to safely get and trim environment variables with fallback
-const getTrimmedEnv = (names) => {
-  for (const name of names) {
-    const val = process.env[name];
-    if (typeof val === 'string' && val.trim().length > 0) {
-      return val.trim();
-    }
+// ─── Lazy Cloudinary Config ───────────────────────────────────────────────────
+// IMPORTANT: We re-read env vars at request time to avoid Vercel caching stale values.
+// We also trim() every value to eliminate hidden whitespace characters.
+const getCloudinaryInstance = () => {
+  const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME || '').trim();
+  const apiKey = (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY || '').trim();
+  const apiSecret = (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET || '').trim();
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(`Cloudinary env vars missing. cloud_name=${!!cloudName} api_key=${!!apiKey} api_secret=${!!apiSecret}`);
   }
-  return null;
+
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true,
+  });
+
+  return cloudinary;
 };
 
-// Consolidated Cloudinary Configuration
-const CLOUD_NAME = getTrimmedEnv(['CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME']);
-const API_KEY = getTrimmedEnv(['CLOUDINARY_API_KEY', 'MY_API_KEY']);
-const API_SECRET = getTrimmedEnv(['CLOUDINARY_API_SECRET', 'MY_API_SECRET']);
-
-// Ensure CLOUDINARY_URL is also trimmed if it exists (Cloudinary SDK uses this automatically)
-if (process.env.CLOUDINARY_URL) {
-  process.env.CLOUDINARY_URL = process.env.CLOUDINARY_URL.trim();
-}
-
-cloudinary.config({
-  cloud_name: CLOUD_NAME,
-  api_key: API_KEY,
-  api_secret: API_SECRET,
-  secure: true
-});
-
-// We will use memory storage to avoid file system read-only issues on Vercel
-// and bypass multer-storage-cloudinary signature bugs.
-
-// Mongoose Models
+// ─── Mongoose Models ──────────────────────────────────────────────────────────
 const GallerySchema = new mongoose.Schema({
   description: { type: String, required: true },
   image_path: { type: String, required: true },
@@ -127,118 +116,124 @@ UserSchema.set('toJSON', {
 
 const User = mongoose.model('User', UserSchema);
 
-// Middleware
+// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow any origin for now to prevent CORS issues on Vercel
-    // Even if FRONTEND_URL is not set in Vercel Dashboard
-    callback(null, true);
-  },
+  origin: (_origin, callback) => callback(null, true),
   credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve static files from uploads directory
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  fileFilter: function (req, file, cb) {
+  fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed!'), false);
     }
   },
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
-// Routes
+// ─── Nodemailer ───────────────────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: { rejectUnauthorized: false },
+});
+
+const sendOTPEmail = async (email, otp) => {
+  const mailOptions = {
+    from: `"N Stars Academy" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: 'Verify your email - N Stars Academy',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <h1 style="color:#ef4444;margin:0;">N Stars Academy</h1>
+          <p style="color:#64748b;font-size:16px;">Elevate Your Journey</p>
+        </div>
+        <div style="padding:24px;background:#f8fafc;border-radius:8px;text-align:center;">
+          <h2 style="color:#1e293b;margin-top:0;">Verify Your Email</h2>
+          <p style="color:#475569;font-size:16px;">Please use the following 6-digit code to verify your account:</p>
+          <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#ef4444;margin:24px 0;padding:12px;border:2px dashed #cbd5e1;border-radius:8px;">
+            ${otp}
+          </div>
+          <p style="color:#64748b;font-size:14px;">This code will expire in 10 minutes.</p>
+        </div>
+        <div style="margin-top:24px;text-align:center;color:#94a3b8;font-size:12px;">
+          <p>&copy; 2024 N Stars Academy. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
+};
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
+// Health check + Cloudinary diagnostics (NO secrets exposed)
 app.get('/api/health', async (req, res) => {
   try {
-    const crypto = await import('crypto');
-    
-    // Helper to check for whitespaces without exposing values
-    const hasWhitespace = (val) => typeof val === 'string' && (val.trim() !== val);
-    
-    const secretToHash = (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET || '');
-    const secretHash = secretToHash ? crypto.createHash('md5').update(secretToHash).digest('hex') : 'none';
-    const urlHash = process.env.CLOUDINARY_URL ? crypto.createHash('md5').update(process.env.CLOUDINARY_URL).digest('hex') : 'none';
+    const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME || '').trim();
+    const apiKey = (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY || '').trim();
+    const apiSecret = (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET || '').trim();
 
     res.json({
       status: 'Server is running',
       timestamp: new Date().toISOString(),
-      cloudinaryPing: 'Skipped for diagnostic',
-      envDebug: {
-        cloud_name_configured: !!CLOUD_NAME,
-        api_key_configured: !!API_KEY,
-        api_secret_configured: !!API_SECRET,
-        hasCloudinaryUrl: !!process.env.CLOUDINARY_URL,
-        // Diagnostic for hidden whitespaces
-        whitespaces: {
-          CLOUDINARY_CLOUD_NAME: hasWhitespace(process.env.CLOUDINARY_CLOUD_NAME),
-          MY_CLOUD_NAME: hasWhitespace(process.env.MY_CLOUD_NAME),
-          CLOUDINARY_API_KEY: hasWhitespace(process.env.CLOUDINARY_API_KEY),
-          MY_API_KEY: hasWhitespace(process.env.MY_API_KEY),
-          CLOUDINARY_API_SECRET: hasWhitespace(process.env.CLOUDINARY_API_SECRET),
-          MY_API_SECRET: hasWhitespace(process.env.MY_API_SECRET),
-          CLOUDINARY_URL: hasWhitespace(process.env.CLOUDINARY_URL)
-        },
-        mongoStatus: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected (' + mongoose.connection.readyState + ')',
-      }
+      cloudinary: {
+        cloud_name_set: !!cloudName,
+        api_key_set: !!apiKey,
+        api_secret_set: !!apiSecret,
+        api_secret_length: apiSecret.length,   // helps detect truncation
+        api_key_last4: apiKey.slice(-4),     // safe to expose last 4
+      },
+      mongo: mongoose.connection.readyState === 1 ? 'Connected' : `Disconnected (${mongoose.connection.readyState})`,
     });
   } catch (error) {
-    res.json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// API Routes for future features
-app.get('/api/events', (req, res) => {
-  const events = [
-    {
-      id: 1,
-      title: 'Annual Championship',
-      date: '2024-03-15',
-      description: 'District level Taekwondo championship'
-    },
-    {
-      id: 2,
-      title: 'Training Camp',
-      date: '2024-02-20',
-      description: 'Intensive training camp for advanced students'
-    }
-  ];
-  res.json({ success: true, data: events });
+// Events
+app.get('/api/events', (_req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { id: 1, title: 'Annual Championship', date: '2024-03-15', description: 'District level Taekwondo championship' },
+      { id: 2, title: 'Training Camp', date: '2024-02-20', description: 'Intensive training camp for advanced students' },
+    ],
+  });
 });
 
+// Gallery – fetch
 app.get('/api/gallery', async (req, res) => {
   const start = Date.now();
   try {
-    const limit = parseInt(req.query.limit) || 100; // Increase limit but keep it bounded
-    const images = await GalleryItem.find()
-      .sort({ createdAt: -1 })
-      .limit(limit);
-    
+    const limit = parseInt(req.query.limit) || 100;
+    const images = await GalleryItem.find().sort({ createdAt: -1 }).limit(limit);
     const duration = Date.now() - start;
-    if (duration > 500) {
-      console.warn(`Slow gallery fetch: ${duration}ms`);
-    }
-
-    res.json({ 
-      success: true, 
-      data: images,
-      _debug: { duration: `${duration}ms` } 
-    });
+    if (duration > 500) console.warn(`Slow gallery fetch: ${duration}ms`);
+    res.json({ success: true, data: images, _debug: { duration: `${duration}ms` } });
   } catch (error) {
     console.error('Gallery fetch error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch gallery' });
   }
 });
 
-// Admin routes
+// Gallery – upload
 app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -247,15 +242,14 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
 
     const { description } = req.body;
 
-    // Upload directly using Cloudinary Stream
+    // Get a freshly configured Cloudinary instance on every request
+    const cl = getCloudinaryInstance();
+
     const uploadResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'nstars-gallery',
-          cloud_name: CLOUD_NAME,
-          api_key: API_KEY,
-          api_secret: API_SECRET,
-        },
+      // Do NOT pass cloud_name / api_key / api_secret here — they are ignored
+      // by upload_stream and only cause confusion. The global config above handles them.
+      const stream = cl.uploader.upload_stream(
+        { folder: 'nstars-gallery' },
         (error, result) => {
           if (error) return reject(error);
           resolve(result);
@@ -272,18 +266,17 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
 
     await newImage.save();
 
-    res.json({
-      success: true,
-      message: 'Image uploaded successfully',
-      image: newImage
-    });
+    res.json({ success: true, message: 'Image uploaded successfully', image: newImage });
   } catch (error) {
     console.error('Upload error:', error);
-    const errorDetails = error.message || (typeof error === 'object' ? JSON.stringify(error) : 'Upload failed');
-    res.status(500).json({ success: false, message: `Details: ${errorDetails} | ${String(error)}` });
+    res.status(500).json({
+      success: false,
+      message: `Upload failed: ${error.message || String(error)}`,
+    });
   }
 });
 
+// Gallery – delete
 app.delete('/api/admin/gallery/:id', async (req, res) => {
   try {
     const item = await GalleryItem.findById(req.params.id);
@@ -291,18 +284,20 @@ app.delete('/api/admin/gallery/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Image not found' });
     }
 
-    // Delete from Cloudinary
     if (item.cloudinary_id) {
-      await cloudinary.uploader.destroy(item.cloudinary_id);
+      const cl = getCloudinaryInstance();
+      await cl.uploader.destroy(item.cloudinary_id);
     }
 
     await GalleryItem.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Delete failed' });
+    console.error('Delete error:', error);
+    res.status(500).json({ success: false, message: `Delete failed: ${error.message}` });
   }
 });
 
+// Registration
 app.post('/api/register', async (req, res) => {
   try {
     const { name, email, phone } = req.body;
@@ -314,86 +309,25 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Nodemailer Setup
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
-
-const sendOTPEmail = async (email, otp) => {
-  const mailOptions = {
-    from: `"N Stars Academy" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Verify your email - N Stars Academy',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #ef4444; margin: 0;">N Stars Academy</h1>
-          <p style="color: #64748b; font-size: 16px;">Elevate Your Journey</p>
-        </div>
-        <div style="padding: 24px; background-color: #f8fafc; border-radius: 8px; text-align: center;">
-          <h2 style="color: #1e293b; margin-top: 0;">Verify Your Email</h2>
-          <p style="color: #475569; font-size: 16px;">Please use the following 6-digit code to verify your account:</p>
-          <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #ef4444; margin: 24px 0; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 8px;">
-            ${otp}
-          </div>
-          <p style="color: #64748b; font-size: 14px;">This code will expire in 10 minutes.</p>
-        </div>
-        <div style="margin-top: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-          <p>&copy; 2024 N Stars Academy. All rights reserved.</p>
-        </div>
-      </div>
-    `
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP sent to ${email}`);
-  } catch (error) {
-    console.error('Error sending email:', error);
-    // We don't throw here to avoid blocking the signup flow if email fails during testing,
-    // but in production you might want to handle this more strictly.
-  }
-};
-
+// Auth – Signup
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    const user = new User({
-      name,
-      email,
-      phone,
-      password: hashedPassword,
-      otp,
-      otpExpires
-    });
-
+    const user = new User({ name, email, phone, password: hashedPassword, otp, otpExpires });
     await user.save();
 
-    // Send real-time OTP email
     await sendOTPEmail(email, otp);
-
-    console.log(`New user created: ${email}. OTP: ${otp}`);
+    console.log(`New user: ${email}. OTP: ${otp}`);
 
     res.json({ success: true, message: 'Signup successful. Please verify OTP.' });
   } catch (error) {
@@ -402,6 +336,7 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+// Auth – Verify OTP
 app.post('/api/auth/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -422,46 +357,40 @@ app.post('/api/auth/verify-otp', async (req, res) => {
   }
 });
 
+// Auth – Resend OTP
 app.post('/api/auth/resend-otp', async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ success: false, message: 'Account already verified' });
 
-    if (user.isVerified) {
-      return res.status(400).json({ success: false, message: 'Account already verified' });
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = Date.now() + 10 * 60 * 1000;
-
-    user.otp = otp;
-    user.otpExpires = otpExpires;
+    user.otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    await sendOTPEmail(email, otp);
-
+    await sendOTPEmail(email, user.otp);
     res.json({ success: true, message: 'OTP resent successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to resend OTP' });
   }
 });
 
+// Auth – Login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-    // Admin check (keep existing admin login for now)
+    // Hardcoded admin shortcut
     if (email === 'admin' || email === 'admin@nstars.com') {
       if (password === 'admin12345') {
-        const token = jwt.sign({ id: 'admin', isAdmin: true }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+        const token = jwt.sign({ id: 'admin', isAdmin: true }, JWT_SECRET, { expiresIn: '1d' });
         return res.json({
           success: true,
           token,
-          user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' }
+          user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' },
         });
       }
     }
@@ -470,7 +399,6 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid email or password' });
     }
-
     if (!user.isVerified) {
       return res.status(400).json({ success: false, message: 'Please verify your account first' });
     }
@@ -480,7 +408,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '1d' });
 
     res.json({
       success: true,
@@ -490,47 +418,42 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
-        role: user.isAdmin ? 'admin' : 'user'
-      }
+        role: user.isAdmin ? 'admin' : 'user',
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
 
-app.post('/api/login', (req, res) => {
-  // Redirecting to /api/auth/login logic if needed
+// Legacy login route
+app.post('/api/login', (_req, res) => {
   res.status(410).json({ success: false, message: 'Please use /api/auth/login' });
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
   console.error('Server Error:', err);
   res.status(500).json({
     success: false,
     message: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 });
 
-// Create uploads directory if it doesn't exist - skipped on Vercel read-only filesystem
+// ─── Uploads Directory (local only) ──────────────────────────────────────────
 if (!process.env.VERCEL) {
   try {
     const uploadsDir = join(__dirname, 'uploads/gallery');
-    if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
-    }
+    if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   } catch (err) {
     console.warn('Could not create uploads directory:', err.message);
   }
 }
 
-// Export the app for Vercel
+// ─── Start Server ─────────────────────────────────────────────────────────────
 export default app;
 
-// Only start the server if not running on Vercel
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 }
