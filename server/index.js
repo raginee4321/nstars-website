@@ -236,7 +236,7 @@ app.get('/api/gallery', async (req, res) => {
   }
 });
 
-// ─── Gallery – UPLOAD (unsigned preset, no signature needed) ──────────────────
+// ─── Gallery – UPLOAD (kept for backward compat, but new flow uses /save) ────
 // ONE-TIME Cloudinary setup:
 //   Settings → Upload → Upload Presets → Add upload preset
 //   Name: nstars_gallery | Signing Mode: Unsigned | Folder: nstars-gallery → Save
@@ -283,6 +283,30 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
     res.json({ success: true, message: 'Image uploaded successfully', image: newImage });
   } catch (error) {
     console.error('Upload error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ─── Gallery – SAVE (browser uploads to Cloudinary directly, then POSTs URL here) ──
+// This is the new preferred flow: Browser → Cloudinary (unsigned), then → here to save URL
+app.post('/api/admin/gallery/save', async (req, res) => {
+  try {
+    const { description, image_path, cloudinary_id } = req.body;
+
+    if (!image_path) {
+      return res.status(400).json({ success: false, message: 'image_path is required' });
+    }
+
+    const newImage = new GalleryItem({
+      description:   description || 'No description',
+      image_path,
+      cloudinary_id,
+    });
+
+    await newImage.save();
+    res.json({ success: true, message: 'Image saved successfully', image: newImage });
+  } catch (error) {
+    console.error('Save error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

@@ -36,30 +36,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     }
   };
 
+  const CLOUDINARY_CLOUD_NAME = 'dcz6nm2bf';
+  const CLOUDINARY_UPLOAD_PRESET = 'nstars_gallery';
+
   const handleUpload = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedFile) return;
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('gallery_image', selectedFile);
-      formData.append('description', description);
+      // ── Step 1: Upload directly from browser → Cloudinary (no server needed) ──
+      const cloudFormData = new FormData();
+      cloudFormData.append('file', selectedFile);
+      cloudFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      cloudFormData.append('folder', 'nstars-gallery');
 
-      const result = await api.uploadGalleryImage(formData);
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: cloudFormData }
+      );
 
-      if (result.success) {
-        setDescription('');
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        loadGalleryImages();
-        alert('Image uploaded successfully!');
-      } else {
-        alert('Upload failed: ' + result.message);
+      if (!cloudRes.ok) {
+        const errText = await cloudRes.text();
+        throw new Error(`Cloudinary error: ${errText}`);
       }
+
+      const cloudData = await cloudRes.json();
+      if (cloudData.error) {
+        throw new Error(cloudData.error.message);
+      }
+
+      // ── Step 2: Save the Cloudinary URL + description to our server ──────────
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+      const saveRes = await fetch(`${API_BASE}/admin/gallery/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: description || 'No description',
+          image_path: cloudData.secure_url,
+          cloudinary_id: cloudData.public_id,
+        }),
+      });
+
+      const saveData = await saveRes.json();
+      if (!saveData.success) {
+        throw new Error(saveData.message || 'Failed to save image record');
+      }
+
+      setDescription('');
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      loadGalleryImages();
+      alert('Image uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      alert('Upload failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setUploading(false);
     }
