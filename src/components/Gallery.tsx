@@ -14,6 +14,12 @@ const Gallery = ({ onBack }: GalleryProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Helper to optimize Cloudinary URLs
+  const getOptimizedUrl = (url: string, options: string = 'f_auto,q_auto,w_600,c_limit') => {
+    if (!url || !url.includes('cloudinary.com') || url.includes('/upload/f_auto')) return url;
+    return url.replace('/upload/', `/upload/${options}/`);
+  };
+
   useEffect(() => {
     const loadImages = async () => {
       try {
@@ -95,9 +101,10 @@ const Gallery = ({ onBack }: GalleryProps) => {
                 onClick={() => openModal(image, index)}
               >
                 <img
-                  src={image.image_path}
+                  src={getOptimizedUrl(image.image_path, 'f_auto,q_auto,w_500,c_fill')}
                   alt={image.description}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="p-4">
                   <p className="text-sm text-gray-300 line-clamp-2">{image.description}</p>
@@ -136,7 +143,7 @@ const Gallery = ({ onBack }: GalleryProps) => {
             </button>
 
             <img
-              src={selectedImage.image_path}
+              src={getOptimizedUrl(selectedImage.image_path, 'f_auto,q_auto,w_1200,c_limit')}
               alt={selectedImage.description}
               className="max-w-full max-h-full object-contain rounded-lg"
             />

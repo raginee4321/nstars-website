@@ -31,12 +31,31 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Cloudinary Configuration - Bypassing Vercel auto-injected variables by using custom names
-// Cloudinary Configuration
+// Helper to safely get and trim environment variables with fallback
+const getTrimmedEnv = (names) => {
+  for (const name of names) {
+    const val = process.env[name];
+    if (typeof val === 'string' && val.trim().length > 0) {
+      return val.trim();
+    }
+  }
+  return null;
+};
+
+// Consolidated Cloudinary Configuration
+const CLOUD_NAME = getTrimmedEnv(['CLOUDINARY_CLOUD_NAME', 'MY_CLOUD_NAME']);
+const API_KEY = getTrimmedEnv(['CLOUDINARY_API_KEY', 'MY_API_KEY']);
+const API_SECRET = getTrimmedEnv(['CLOUDINARY_API_SECRET', 'MY_API_SECRET']);
+
+// Ensure CLOUDINARY_URL is also trimmed if it exists (Cloudinary SDK uses this automatically)
+if (process.env.CLOUDINARY_URL) {
+  process.env.CLOUDINARY_URL = process.env.CLOUDINARY_URL.trim();
+}
+
 cloudinary.config({
-  cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME)?.trim(),
-  api_key: (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY)?.trim(),
-  api_secret: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.trim(),
+  cloud_name: CLOUD_NAME,
+  api_key: API_KEY,
+  api_secret: API_SECRET,
   secure: true
 });
 
@@ -50,6 +69,8 @@ const GallerySchema = new mongoose.Schema({
   cloudinary_id: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
+
+GallerySchema.index({ createdAt: -1 });
 
 GallerySchema.set('toJSON', {
   virtuals: true,
@@ -139,7 +160,12 @@ const upload = multer({
 app.get('/api/health', async (req, res) => {
   try {
     const crypto = await import('crypto');
-    const secretHash = process.env.CLOUDINARY_API_SECRET ? crypto.createHash('md5').update(process.env.CLOUDINARY_API_SECRET).digest('hex') : 'none';
+    
+    // Helper to check for whitespaces without exposing values
+    const hasWhitespace = (val) => typeof val === 'string' && (val.trim() !== val);
+    
+    const secretToHash = (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET || '');
+    const secretHash = secretToHash ? crypto.createHash('md5').update(secretToHash).digest('hex') : 'none';
     const urlHash = process.env.CLOUDINARY_URL ? crypto.createHash('md5').update(process.env.CLOUDINARY_URL).digest('hex') : 'none';
 
     res.json({
@@ -147,11 +173,21 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       cloudinaryPing: 'Skipped for diagnostic',
       envDebug: {
-        hasCloudName: !!(process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME),
-        hasApiKey: !!(process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY),
-        secretLength: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.length || 0,
+        cloud_name_configured: !!CLOUD_NAME,
+        api_key_configured: !!API_KEY,
+        api_secret_configured: !!API_SECRET,
+        hasCloudinaryUrl: !!process.env.CLOUDINARY_URL,
+        // Diagnostic for hidden whitespaces
+        whitespaces: {
+          CLOUDINARY_CLOUD_NAME: hasWhitespace(process.env.CLOUDINARY_CLOUD_NAME),
+          MY_CLOUD_NAME: hasWhitespace(process.env.MY_CLOUD_NAME),
+          CLOUDINARY_API_KEY: hasWhitespace(process.env.CLOUDINARY_API_KEY),
+          MY_API_KEY: hasWhitespace(process.env.MY_API_KEY),
+          CLOUDINARY_API_SECRET: hasWhitespace(process.env.CLOUDINARY_API_SECRET),
+          MY_API_SECRET: hasWhitespace(process.env.MY_API_SECRET),
+          CLOUDINARY_URL: hasWhitespace(process.env.CLOUDINARY_URL)
+        },
         mongoStatus: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected (' + mongoose.connection.readyState + ')',
-        hasMongoUri: !!process.env.MONGODB_URI
       }
     });
   } catch (error) {
@@ -179,10 +215,25 @@ app.get('/api/events', (req, res) => {
 });
 
 app.get('/api/gallery', async (req, res) => {
+  const start = Date.now();
   try {
-    const images = await GalleryItem.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: images });
+    const limit = parseInt(req.query.limit) || 100; // Increase limit but keep it bounded
+    const images = await GalleryItem.find()
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    
+    const duration = Date.now() - start;
+    if (duration > 500) {
+      console.warn(`Slow gallery fetch: ${duration}ms`);
+    }
+
+    res.json({ 
+      success: true, 
+      data: images,
+      _debug: { duration: `${duration}ms` } 
+    });
   } catch (error) {
+    console.error('Gallery fetch error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch gallery' });
   }
 });
@@ -201,9 +252,9 @@ app.post('/api/admin/gallery/upload', upload.single('gallery_image'), async (req
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'nstars-gallery',
-          cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || process.env.MY_CLOUD_NAME)?.trim(),
-          api_key: (process.env.CLOUDINARY_API_KEY || process.env.MY_API_KEY)?.trim(),
-          api_secret: (process.env.CLOUDINARY_API_SECRET || process.env.MY_API_SECRET)?.trim(),
+          cloud_name: CLOUD_NAME,
+          api_key: API_KEY,
+          api_secret: API_SECRET,
         },
         (error, result) => {
           if (error) return reject(error);
