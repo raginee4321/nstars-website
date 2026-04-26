@@ -69,7 +69,7 @@ export default function LoginPage({ onNavigate, onLoginSuccess }: LoginPageProps
                 </button>
 
                 {/* Login Card */}
-                <div className="relative bg-black bg-opacity-60 backdrop-blur-xl rounded-3xl p-8 border border-gray-700 shadow-2xl">
+                <div className="relative bg-black bg-opacity-60 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-gray-700 shadow-2xl">
                     {/* Gradient border effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 rounded-3xl opacity-20 animate-gradient-x"></div>
                     <div className="absolute inset-0.5 bg-black bg-opacity-90 rounded-3xl"></div>
@@ -83,9 +83,9 @@ export default function LoginPage({ onNavigate, onLoginSuccess }: LoginPageProps
                                     <img 
                                         src="/logo_new.jpg" 
                                         alt="N Stars Logo" 
-                                        className="relative w-20 h-20 object-contain rounded-2xl shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500"
+                                        className="relative w-28 h-28 object-contain rounded-full shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500 bg-black/40"
                                     />
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-2xl opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-full opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
                                 </div>
                             </div>
                             <h2 

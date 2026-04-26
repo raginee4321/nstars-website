@@ -70,9 +70,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onBack }) => {
                   <img 
                     src="/logo_new.jpg" 
                     alt="N Stars Logo" 
-                    className="relative w-20 h-20 object-contain rounded-2xl shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500"
+                    className="relative w-28 h-28 object-contain rounded-full shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500 bg-black/40"
                   />
-                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-2xl opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-full opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
                 </div>
               </div>
               <h2 

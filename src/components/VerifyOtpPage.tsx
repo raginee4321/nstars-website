@@ -114,7 +114,7 @@ export default function VerifyOtpPage({ email, onNavigate, onVerifySuccess }: Ve
                 </button>
 
                 {/* OTP Card */}
-                <div className="relative bg-black bg-opacity-60 backdrop-blur-xl rounded-3xl p-8 border border-gray-700 shadow-2xl">
+                <div className="relative bg-black bg-opacity-60 backdrop-blur-xl rounded-3xl p-5 sm:p-8 border border-gray-700 shadow-2xl">
                     {/* Gradient border effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 rounded-3xl opacity-20 animate-gradient-x"></div>
                     <div className="absolute inset-0.5 bg-black bg-opacity-90 rounded-3xl"></div>
@@ -128,9 +128,9 @@ export default function VerifyOtpPage({ email, onNavigate, onVerifySuccess }: Ve
                                     <img 
                                         src="/logo_new.jpg" 
                                         alt="N Stars Logo" 
-                                        className="relative w-20 h-20 object-contain rounded-2xl shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500"
+                                        className="relative w-28 h-28 object-contain rounded-full shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500 bg-black/40"
                                     />
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-2xl opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-full opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
                                 </div>
                             </div>
                             <h2 
@@ -139,7 +139,10 @@ export default function VerifyOtpPage({ email, onNavigate, onVerifySuccess }: Ve
                             >
                                 Verify Email
                             </h2>
-                            <p className="text-gray-400">Enter the code sent to <span className="text-yellow-400">{email}</span></p>
+                            <p className="text-gray-400 text-sm sm:text-base">
+                                Enter the code sent to <br className="sm:hidden" /> 
+                                <span className="text-yellow-400 break-all">{email}</span>
+                            </p>
                         </div>
 
                         {error && (
@@ -150,16 +153,16 @@ export default function VerifyOtpPage({ email, onNavigate, onVerifySuccess }: Ve
 
                         {/* OTP Inputs */}
                         <form onSubmit={handleVerify} className="space-y-8">
-                            <div className="flex justify-between gap-2">
+                            <div className="flex justify-between gap-1 sm:gap-2">
                                 {otp.map((digit, idx) => (
-                                    <div key={idx} className="relative group">
+                                    <div key={idx} className="relative group flex-1">
                                         <input
                                             id={`otp-${idx}`}
                                             type="text"
                                             value={digit}
                                             onChange={(e) => handleChange(idx, e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(idx, e)}
-                                            className="w-12 h-14 text-center text-2xl font-bold bg-gray-800 bg-opacity-50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300"
+                                            className="w-full h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold bg-gray-800 bg-opacity-50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300"
                                             maxLength={1}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-red-500 rounded-xl opacity-0 group-focus-within:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
