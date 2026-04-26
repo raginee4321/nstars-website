@@ -124,11 +124,11 @@ export default function VerifyOtpPage({ email, onNavigate, onVerifySuccess }: Ve
                         <div className="text-center mb-8">
                             <div className="flex justify-center mb-6">
                                 <div className="relative group">
-                                    <div className="absolute inset-0 bg-yellow-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
                                     <img 
                                         src="/logo_new.jpg" 
                                         alt="N Stars Logo" 
-                                        className="relative w-28 h-28 object-contain rounded-full shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500 bg-black/40"
+                                        className="relative w-28 h-28 object-cover rounded-full shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500 bg-black/40"
                                     />
                                     <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-full opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
                                 </div>

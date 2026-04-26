@@ -55,7 +55,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onBack }) => {
 
       {/* Header */}
       <h1 className="text-3xl md:text-4xl font-bold mb-6 flex items-center gap-4 text-yellow-400">
-        <img src="/logo_new.jpg" alt="Logo" className="w-16 h-16 rounded-full border-2 border-yellow-400/50 object-contain shadow-lg bg-black/40" />
+        <img src="/logo_new.jpg" alt="Logo" className="w-16 h-16 rounded-full border-2 border-yellow-400/50 object-cover shadow-lg bg-black/40" />
         Scan Your Certificate here
       </h1>
 
