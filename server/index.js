@@ -439,16 +439,13 @@ apiRouter.post('/auth/resend-otp', async (req, res) => {
 // Auth – Login
 apiRouter.post('/auth/login', async (req, res) => {
   try {
-    // Ensure DB is connected for non-hardcoded lookups
-    await ensureConnected().catch(err => console.warn('Warning: DB connection check failed:', err.message));
-
     const { email: rawEmail, password: rawPassword } = req.body;
     const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
     const password = typeof rawPassword === 'string' ? rawPassword.trim() : '';
 
     const JWT_SECRET = env('JWT_SECRET', 'your_jwt_secret');
     
-    // 1. Hardcoded Admin Check (Bypasses DB)
+    // 1. Hardcoded Admin Check (Truly independent of DB)
     if (email === 'admin' || email === 'admin@nstars.com') {
       if (password === 'admin12345') {
         const token = jwt.sign({ id: 'admin', isAdmin: true }, JWT_SECRET, { expiresIn: '1d' });
@@ -460,7 +457,9 @@ apiRouter.post('/auth/login', async (req, res) => {
       }
     }
 
-    // 2. Database User Check
+    // 2. Database User Check (Requires connection)
+    await ensureConnected().catch(err => console.warn('Warning: DB connection failed for user lookup:', err.message));
+    
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ success: false, message: 'Database is currently unavailable. Please try again later.' });
     }
