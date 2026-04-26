@@ -15,10 +15,15 @@ export const authApi = {
       } catch (e) {
         return { error: `Server error: ${response.status}` };
       }
-      if (!response.ok) return { error: data.message || 'Login failed' };
+      if (!response.ok) {
+        if (response.status >= 500) {
+          return { error: 'Server configuration error. Please check backend logs.' };
+        }
+        return { error: data.message || 'Login failed' };
+      }
       return { data };
     } catch (error) {
-      return { error: 'Network error' };
+      return { error: 'Network error. Please check your internet connection.' };
     }
   },
   signup: async (userData: any) => {
