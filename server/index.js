@@ -271,16 +271,17 @@ apiRouter.get('/events', (_req, res) => {
 
 // Gallery – fetch all
 apiRouter.get('/gallery', async (req, res) => {
-  const start = Date.now();
   try {
-    const limit  = parseInt(req.query.limit) || 100;
+    await ensureConnected().catch(err => console.warn('Gallery DB connect warning:', err.message));
+    const start = Date.now();
+    const limit  = parseInt(req.query.limit as string) || 100;
     const images = await GalleryItem.find().sort({ createdAt: -1 }).limit(limit);
     const duration = Date.now() - start;
     if (duration > 500) console.warn(`Slow gallery fetch: ${duration}ms`);
     res.json({ success: true, data: images, _debug: { duration: `${duration}ms` } });
   } catch (error) {
     console.error('Gallery fetch error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch gallery' });
+    res.status(500).json({ success: false, message: 'Failed to fetch gallery. Database may be offline.' });
   }
 });
 
@@ -327,17 +328,9 @@ apiRouter.post('/admin/gallery/upload', upload.single('gallery_image'), async (r
 
 // Gallery – SAVE (New preferred flow)
 apiRouter.post('/admin/gallery/save', async (req, res) => {
-  console.log('Received gallery save request:', req.body);
-  
-  if (mongoose.connection.readyState !== 1) {
-    console.error('Save failed: MongoDB not connected (State: ' + mongoose.connection.readyState + ')');
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Database connection is not ready. Please check MongoDB configuration.' 
-    });
-  }
-
   try {
+    await ensureConnected();
+    
     const { description, image_path, cloudinary_id } = req.body;
     if (!image_path) return res.status(400).json({ success: false, message: 'image_path is required' });
 
@@ -352,7 +345,12 @@ apiRouter.post('/admin/gallery/save', async (req, res) => {
     res.json({ success: true, message: 'Image saved successfully', image: newImage });
   } catch (error) {
     console.error('Save error in MongoDB:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message.includes('Database connection') 
+        ? 'Database connection is not ready. Please check MongoDB IP Whitelist.' 
+        : error.message 
+    });
   }
 });
 
@@ -385,6 +383,7 @@ apiRouter.post('/register', async (req, res) => {
 // Auth – Signup
 apiRouter.post('/auth/signup', async (req, res) => {
   try {
+    await ensureConnected();
     const { name, email, phone, password } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ success: false, message: 'User already exists' });
