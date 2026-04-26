@@ -1,6 +1,8 @@
 import { GalleryImage, ApiResponse, User } from '../types';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+// Ensure API_BASE_URL always ends with /api to avoid 405 errors on Vercel
+const base = import.meta.env.VITE_API_BASE_URL || '/api';
+export const API_BASE_URL = base.endsWith('/api') ? base : `${base}/api`.replace('//api', '/api');
 
 class ApiService {
   private async request<T>(
@@ -92,10 +94,10 @@ class ApiService {
     });
   }
 
-  async login(username: string, password: string): Promise<ApiResponse<User>> {
-    return this.request<User>('/login', {
+  async login(email: string, password: string): Promise<ApiResponse<User>> {
+    return this.request<User>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email, password }),
     });
   }
 }
