@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { mkdirSync, existsSync } from 'fs';
 import crypto from 'crypto';
 
