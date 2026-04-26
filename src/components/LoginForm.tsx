@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 interface LoginFormProps {
   onLogin: (username: string, password: string) => void;
@@ -64,10 +64,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onBack }) => {
           <div className="relative">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <Shield className="w-16 h-16 text-yellow-400 animate-pulse" />
-                  <div className="absolute inset-0 bg-yellow-400 rounded-full opacity-20 animate-ping"></div>
+              <div className="flex justify-center mb-6">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-yellow-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                  <img 
+                    src="/logo_new.jpg" 
+                    alt="N Stars Logo" 
+                    className="relative w-20 h-20 object-contain rounded-2xl shadow-2xl border-2 border-yellow-400/50 transform group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-red-500 rounded-2xl opacity-20 group-hover:opacity-40 blur animate-pulse"></div>
                 </div>
               </div>
               <h2 

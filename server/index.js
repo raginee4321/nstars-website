@@ -174,16 +174,29 @@ const upload = multer({
 });
 
 // ─── Nodemailer ───────────────────────────────────────────────────────────────
+const getEmailConfig = () => {
+  const user = env('EMAIL_USER');
+  const pass = env('EMAIL_PASS').replace(/\s+/g, ''); // Remove spaces from App Password
+  return { user, pass };
+};
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  auth: getEmailConfig(),
   tls: { rejectUnauthorized: false },
 });
 
 const sendOTPEmail = async (email, otp) => {
+  const { user } = getEmailConfig();
+  if (!user) {
+    console.error('Email configuration missing: EMAIL_USER is not set');
+    return;
+  }
+
   try {
-    await transporter.sendMail({
-      from: `"N Stars Academy" <${process.env.EMAIL_USER}>`,
+    console.log(`Attempting to send OTP to: ${email}...`);
+    const info = await transporter.sendMail({
+      from: `"N Stars Academy" <${user}>`,
       to: email,
       subject: 'Verify your email - N Stars Academy',
       html: `
@@ -208,9 +221,12 @@ const sendOTPEmail = async (email, otp) => {
         </div>
       `,
     });
-    console.log(`OTP sent to ${email}`);
+    console.log(`OTP successfully sent to ${email}. MessageId: ${info.messageId}`);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('CRITICAL ERROR sending email:', error.message);
+    if (error.code === 'EAUTH') {
+      console.error('Authentication failed. Check if your App Password is correct and EMAIL_USER matches.');
+    }
   }
 };
 

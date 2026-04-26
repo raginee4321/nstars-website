@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 interface QRScannerProps {
   onBack?: () => void;
@@ -54,8 +54,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onBack }) => {
       )}
 
       {/* Header */}
-      <h1 className="text-3xl md:text-4xl font-bold mb-6 flex items-center gap-2 text-yellow-400">
-        <Shield className="w-10 h-10" />
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 flex items-center gap-4 text-yellow-400">
+        <img src="/logo_new.jpg" alt="Logo" className="w-12 h-12 rounded-lg border border-yellow-400/50 object-contain shadow-lg" />
         Scan Your Certificate here
       </h1>
 
