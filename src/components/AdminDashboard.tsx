@@ -61,7 +61,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         throw new Error(`Cloudinary error: ${errText}`);
       }
 
-      const cloudData = await cloudRes.json();
+      let cloudData;
+      const cloudText = await cloudRes.text();
+      try {
+        cloudData = cloudText ? JSON.parse(cloudText) : {};
+      } catch (e) {
+        throw new Error(`Failed to parse Cloudinary response as JSON. Status: ${cloudRes.status}. Response: ${cloudText.slice(0, 100)}`);
+      }
+
       if (cloudData.error) {
         throw new Error(cloudData.error.message);
       }

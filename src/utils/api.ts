@@ -20,7 +20,18 @@ class ApiService {
         headers: mergedHeaders,
       });
 
-      const responseData = await response.json();
+      const responseText = await response.text();
+      let responseData;
+      try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('Failed to parse API response:', responseText);
+        return {
+          success: false,
+          data: undefined,
+          message: `Failed to parse response. Status: ${response.status}`,
+        } as ApiResponse<T>;
+      }
 
       // Handle both wrapped { success, data } and raw responses
       if (responseData && typeof responseData === 'object' && 'success' in responseData) {
@@ -56,8 +67,14 @@ class ApiService {
         method: 'POST',
         body: formData,
       });
-      const data = (await response.json()) as ApiResponse<GalleryImage>;
-      return data;
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        throw new Error(`Failed to parse upload response. Status: ${response.status}`);
+      }
+      return data as ApiResponse<GalleryImage>;
     } catch (error: unknown) {
       console.error('Upload failed:', error);
       return {

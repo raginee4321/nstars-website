@@ -208,6 +208,10 @@ apiRouter.get('/health', (_req, res) => {
     mongo: mongoose.connection.readyState === 1
       ? 'Connected'
       : `Disconnected (${mongoose.connection.readyState})`,
+    mongo_debug: {
+      uri_set: !!env('MONGODB_URI'),
+      uri_start: env('MONGODB_URI').slice(0, 20) + '...',
+    }
   });
 });
 
@@ -253,7 +257,14 @@ apiRouter.post('/admin/gallery/upload', upload.single('gallery_image'), async (r
     formData.append('folder',        'nstars-gallery');
 
     const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
-    const uploadResult = await cloudinaryRes.json();
+    const responseText = await cloudinaryRes.text();
+    let uploadResult;
+    try {
+      uploadResult = responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error('Cloudinary response parse failed:', responseText);
+      return res.status(500).json({ success: false, message: 'Cloudinary returned invalid response' });
+    }
 
     if (uploadResult.error) return res.status(500).json({ success: false, message: uploadResult.error.message });
 
@@ -274,6 +285,15 @@ apiRouter.post('/admin/gallery/upload', upload.single('gallery_image'), async (r
 // Gallery – SAVE (New preferred flow)
 apiRouter.post('/admin/gallery/save', async (req, res) => {
   console.log('Received gallery save request:', req.body);
+  
+  if (mongoose.connection.readyState !== 1) {
+    console.error('Save failed: MongoDB not connected (State: ' + mongoose.connection.readyState + ')');
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Database connection is not ready. Please check MongoDB configuration.' 
+    });
+  }
+
   try {
     const { description, image_path, cloudinary_id } = req.body;
     if (!image_path) return res.status(400).json({ success: false, message: 'image_path is required' });
