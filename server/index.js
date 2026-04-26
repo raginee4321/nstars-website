@@ -23,13 +23,11 @@ const __dirname  = dirname(__filename);
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── Helper: read + trim env var (tries multiple names) ──────────────────────
-const env = (...names) => {
-  for (const name of names) {
-    const val = process.env[name];
-    if (typeof val === 'string' && val.trim()) return val.trim();
-  }
-  return '';
+// ─── Helper: read + trim env var ─────────────────────────────────────────────
+const env = (name, defaultValue = '') => {
+  const val = process.env[name];
+  if (typeof val === 'string' && val.trim()) return val.trim();
+  return defaultValue;
 };
 
 // ─── Cloudinary helpers (pure HTTP, no SDK signing) ───────────────────────────
@@ -79,10 +77,34 @@ const cloudinaryDelete = async (publicId) => {
   return data;
 };
 
-// ─── MongoDB ──────────────────────────────────────────────────────────────────
-mongoose.connect(env('MONGODB_URI'))
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// ─── MongoDB Connection Management (Singleton for Vercel) ────────────────────
+let isConnected = false;
+
+const ensureConnected = async () => {
+  if (isConnected && mongoose.connection.readyState === 1) return;
+
+  const uri = env('MONGODB_URI');
+  if (!uri) {
+    throw new Error('MONGODB_URI environment variable is missing');
+  }
+
+  try {
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    isConnected = true;
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    isConnected = false;
+    console.error('MongoDB connection error:', err);
+    throw new Error(`Database connection failed: ${err.message}`);
+  }
+};
+
+// Initial connection attempt (don't crash the server if it fails initially)
+ensureConnected().catch(err => console.error('Initial DB connection failed:', err.message));
 
 // ─── Mongoose Models ──────────────────────────────────────────────────────────
 const GallerySchema = new mongoose.Schema({
@@ -191,28 +213,49 @@ const sendOTPEmail = async (email, otp) => {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 const apiRouter = express.Router();
 
-// Health check
-apiRouter.get('/health', (_req, res) => {
+// System Diagnostics Check
+apiRouter.get('/system-check', async (_req, res) => {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  
+  let mongoStatus = 'unknown';
+  let mongoError = null;
+  try {
+    await ensureConnected();
+    mongoStatus = 'Connected';
+  } catch (err) {
+    mongoStatus = 'Error';
+    mongoError = err.message;
+  }
+
   res.json({
-    status: 'Server is running',
+    status: 'online',
     timestamp: new Date().toISOString(),
-    cloudinary: {
-      cloud_name_set:    !!cloudName,
-      cloud_name:        cloudName,
-      api_key_set:       !!apiKey,
-      api_key_last4:     apiKey.slice(-4),
-      api_secret_set:    !!apiSecret,
-      api_secret_length: apiSecret.length,
+    environment: {
+      is_production: process.env.NODE_ENV === 'production',
+      is_vercel:     !!process.env.VERCEL,
     },
-    mongo: mongoose.connection.readyState === 1
-      ? 'Connected'
-      : `Disconnected (${mongoose.connection.readyState})`,
-    mongo_debug: {
+    mongodb: {
+      status:  mongoStatus,
+      state:   mongoose.connection.readyState,
+      error:   mongoError,
       uri_set: !!env('MONGODB_URI'),
-      uri_start: env('MONGODB_URI').slice(0, 20) + '...',
+    },
+    cloudinary: {
+      cloud_name: cloudName || 'NOT_SET',
+      api_key:    apiKey ? `${apiKey.slice(0, 3)}...${apiKey.slice(-3)}` : 'NOT_SET',
+      secret_set: !!apiSecret,
+    },
+    auth: {
+      jwt_secret_set: !!env('JWT_SECRET'),
+      email_user_set: !!env('EMAIL_USER'),
+      email_pass_set: !!env('EMAIL_PASS'),
     }
   });
+});
+
+// Legacy health check
+apiRouter.get('/health', (_req, res) => {
+  res.json({ status: 'Server is running', mongo: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected' });
 });
 
 // Events
@@ -396,13 +439,16 @@ apiRouter.post('/auth/resend-otp', async (req, res) => {
 // Auth – Login
 apiRouter.post('/auth/login', async (req, res) => {
   try {
+    // Ensure DB is connected for non-hardcoded lookups
+    await ensureConnected().catch(err => console.warn('Warning: DB connection check failed:', err.message));
+
     const { email: rawEmail, password: rawPassword } = req.body;
-    const email = typeof rawEmail === 'string' ? rawEmail.trim() : '';
+    const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
     const password = typeof rawPassword === 'string' ? rawPassword.trim() : '';
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+    const JWT_SECRET = env('JWT_SECRET', 'your_jwt_secret');
     
-    // Hardcoded Admin Check
+    // 1. Hardcoded Admin Check (Bypasses DB)
     if (email === 'admin' || email === 'admin@nstars.com') {
       if (password === 'admin12345') {
         const token = jwt.sign({ id: 'admin', isAdmin: true }, JWT_SECRET, { expiresIn: '1d' });
@@ -412,6 +458,11 @@ apiRouter.post('/auth/login', async (req, res) => {
           user: { name: 'Admin', email: 'admin@nstars.com', isAdmin: true, role: 'admin' } 
         });
       }
+    }
+
+    // 2. Database User Check
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ success: false, message: 'Database is currently unavailable. Please try again later.' });
     }
 
     const user = await User.findOne({ email });
@@ -428,11 +479,11 @@ apiRouter.post('/auth/login', async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin, role: user.isAdmin ? 'admin' : 'user' } 
     });
   } catch (error) {
-    console.error('Login error detailed:', error);
+    console.error('CRITICAL LOGIN ERROR:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Login failed',
-      _debug: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      message: 'A server error occurred during login. Please contact support.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined 
     });
   }
 });

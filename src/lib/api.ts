@@ -16,14 +16,19 @@ export const authApi = {
         return { error: `Server error: ${response.status}` };
       }
       if (!response.ok) {
+        // Detailed feedback for common server issues
+        if (response.status === 503) {
+          return { error: 'Database is currently connecting or unavailable. Please wait a moment and try again.' };
+        }
         if (response.status >= 500) {
-          return { error: 'Server configuration error. Please check backend logs.' };
+          return { error: 'Server encountered an error. Check https://nstars-website.vercel.app/api/system-check for status.' };
         }
         return { error: data.message || 'Login failed' };
       }
       return { data };
     } catch (error) {
-      return { error: 'Network error. Please check your internet connection.' };
+      console.error('API Error:', error);
+      return { error: 'Network issue detected. Please check your internet or try again later.' };
     }
   },
   signup: async (userData: any) => {
