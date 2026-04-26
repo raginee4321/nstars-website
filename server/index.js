@@ -274,7 +274,7 @@ apiRouter.get('/gallery', async (req, res) => {
   try {
     await ensureConnected().catch(err => console.warn('Gallery DB connect warning:', err.message));
     const start = Date.now();
-    const limit  = parseInt(req.query.limit as string) || 100;
+    const limit  = parseInt(req.query.limit) || 100;
     const images = await GalleryItem.find().sort({ createdAt: -1 }).limit(limit);
     const duration = Date.now() - start;
     if (duration > 500) console.warn(`Slow gallery fetch: ${duration}ms`);
