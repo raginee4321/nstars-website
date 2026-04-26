@@ -7,9 +7,12 @@ import { dirname, join } from 'path';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 import { mkdirSync, existsSync } from 'fs';
 import crypto from 'crypto';
+
+// ─── Global Error Handling ───────────────────────────────────────────────────
+process.on('uncaughtException',  (err) => console.error('UNCAUGHT EXCEPTION:',  err));
+process.on('unhandledRejection', (err) => console.error('UNHANDLED REJECTION:', err));
 
 // ─── Environment Variables ────────────────────────────────────────────────────
 dotenv.config();
@@ -231,6 +234,7 @@ apiRouter.get('/system-check', async (_req, res) => {
     status: 'online',
     timestamp: new Date().toISOString(),
     environment: {
+      node_version:  process.version,
       is_production: process.env.NODE_ENV === 'production',
       is_vercel:     !!process.env.VERCEL,
     },
@@ -295,12 +299,13 @@ apiRouter.post('/admin/gallery/upload', upload.single('gallery_image'), async (r
     const base64  = req.file.buffer.toString('base64');
     const dataUri = `data:${req.file.mimetype};base64,${base64}`;
 
-    const formData = new FormData();
+    const formData = new (global.FormData || (await import('form-data')).default)();
     formData.append('file',          dataUri);
     formData.append('upload_preset', 'nstars_gallery');
     formData.append('folder',        'nstars-gallery');
 
-    const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
+    const fetchMethod = global.fetch || (await import('node-fetch')).default;
+    const cloudinaryRes = await fetchMethod(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
     const responseText = await cloudinaryRes.text();
     let uploadResult;
     try {
